@@ -13,7 +13,9 @@ import {
   readdir,
   readFile,
   remove,
-  writeFile
+  writeFile,
+  removeByRoot,
+  copyFile
 } from '../../Fn'
 import { ForkPromise } from '@shared/ForkPromise'
 import { TaskQueue, TaskQueueProgress } from '@shared/TaskQueue'
@@ -21,12 +23,17 @@ import { join, dirname, resolve as PathResolve, basename } from 'path'
 import { I18nT } from '@lang/index'
 import type { AppServiceAliasItem, SoftInstalled } from '@shared/app'
 import Helper from '../../Helper'
-import { ProcessSearch } from '@shared/Process'
+import {
+  fetchProcessPidByPort,
+  ProcessKill,
+  ProcessListFetch,
+  ProcessSearch
+} from '@shared/Process'
 import RequestTimer from '@shared/requestTimer'
 import { spawn } from 'child_process'
 import { userInfo } from 'os'
 import { BomCleanTask } from '../../util/BomCleanTask'
-import { appDebugLog, defaultShell, isMacOS } from '@shared/utils'
+import { appDebugLog, defaultShell, isLinux, isMacOS } from '@shared/utils'
 import { shellEnv } from 'shell-env'
 import EnvSync from '@shared/EnvSync'
 
@@ -90,7 +97,7 @@ class Manager extends Base {
         return
       }
       try {
-        await Helper.send('tools', 'writeFileByRoot', file, content)
+        await writeFileByRoot(file, content)
         resolve(true)
       } catch (e) {
         reject(e)
@@ -207,10 +214,7 @@ class Manager extends Base {
       const flagDir = join(envDir, flag)
       // Delete the subfolder
       try {
-        await remove(flagDir)
-      } catch {}
-      try {
-        await Helper.send('tools', 'rm', flagDir)
+        await removeByRoot(flagDir)
       } catch {}
       appDebugLog('[updatePATH][binPath]', `${binPath}`).catch()
       appDebugLog('[updatePATH][all]', `${JSON.stringify(all, null, 2)}`).catch()
@@ -218,7 +222,9 @@ class Manager extends Base {
       if (!all.includes(binPath)) {
         try {
           await execPromise(['ln', '-s', `"${binPath}"`, `"${flagDir}"`].join(' '))
-        } catch {}
+        } catch (e) {
+          appDebugLog('[updatePATH][ls -s][error]', `${e}`).catch()
+        }
       }
       // Get all subfolders under the `env` folder (e.g., 'php', 'nginx', 'mysql', etc.)
       let allFile = await readdir(envDir)
@@ -461,7 +467,7 @@ class Manager extends Base {
   killPids(sig: string, pids: Array<string>) {
     return new ForkPromise(async (resolve) => {
       try {
-        await Helper.send('tools', 'kill', sig, pids)
+        await ProcessKill(sig, pids)
       } catch {}
       resolve(true)
     })
@@ -471,7 +477,7 @@ class Manager extends Base {
     return new ForkPromise(async (resolve) => {
       let content = ''
       try {
-        content = (await Helper.send('tools', 'readFileByRoot', file)) as any
+        content = await readFileByRoot(file)
       } catch {}
       resolve(content)
     })
@@ -480,7 +486,7 @@ class Manager extends Base {
   writeFileByRoot(file: string, content: string) {
     return new ForkPromise(async (resolve) => {
       try {
-        await Helper.send('tools', 'writeFileByRoot', file, content)
+        await writeFileByRoot(file, content)
       } catch {}
       resolve(true)
     })
@@ -490,7 +496,7 @@ class Manager extends Base {
     return new ForkPromise(async (resolve) => {
       let arr: any
       try {
-        arr = await Helper.send('tools', 'getPortPids', port)
+        arr = await fetchProcessPidByPort(port)
       } catch {}
       resolve(arr)
     })
@@ -500,7 +506,7 @@ class Manager extends Base {
     return new ForkPromise(async (resolve) => {
       let arr: any = []
       try {
-        const plist: any = await Helper.send('tools', 'processList')
+        const plist: any = await ProcessListFetch()
         arr = ProcessSearch(key, false, plist)
       } catch {}
       resolve(arr)
@@ -528,10 +534,11 @@ class Manager extends Base {
   }
 
   runInTerminal(command: string) {
-    return new ForkPromise((resolve, reject) => {
-      // 转义命令中的特殊字符
-      command = command.replace(/"/g, '\\"')
-      const appleScript = `
+    return new ForkPromise(async (resolve, reject) => {
+      if (isMacOS()) {
+        // 转义命令中的特殊字符
+        command = command.replace(/"/g, '\\"')
+        const appleScript = `
         tell application "Terminal"
           if not running then
             activate
@@ -542,27 +549,45 @@ class Manager extends Base {
           end if
         end tell`
 
-      let error: any = undefined
-      const osa = spawn('osascript', ['-e', appleScript])
-      osa.on('error', (err) => {
-        error = err
-      })
-      osa.on('close', () => {
-        console.log('close !!!')
-        if (error) {
-          reject(error)
-        } else {
+        let error: any = undefined
+        const osa = spawn('osascript', ['-e', appleScript])
+        osa.on('error', (err) => {
+          error = err
+        })
+        osa.on('close', () => {
+          console.log('close !!!')
+          if (error) {
+            reject(error)
+          } else {
+            resolve(true)
+          }
+        })
+      } else {
+        const terminalSH = join(global.Server.Static!, 'sh/exec-by-terminal.sh')
+        const exeSH = join(global.Server.Cache!, `${uuid()}.sh`)
+        await copyFile(terminalSH, exeSH)
+        await chmod(exeSH, '0755')
+
+        try {
+          await execPromise(`"${exeSH}" "${command}"`, {
+            cwd: global.Server.Cache!
+          })
+          await remove(exeSH)
           resolve(true)
+        } catch (e) {
+          await remove(exeSH)
+          return reject(e)
         }
-      })
+      }
     })
   }
 
   openPathByApp(dir: string, app: 'Terminal') {
     return new ForkPromise(async (resolve, reject) => {
-      let appleScript = ''
-      if (app === 'Terminal') {
-        appleScript = `tell application "Terminal"
+      if (isMacOS()) {
+        let appleScript = ''
+        if (app === 'Terminal') {
+          appleScript = `tell application "Terminal"
   if not running then
     activate
     do script "cd " & quoted form of "${dir}" in front window
@@ -571,20 +596,37 @@ class Manager extends Base {
     do script "cd " & quoted form of "${dir}"
   end if
 end tell`
+        }
+        const scptFile = join(global.Server.Cache!, `${uuid()}.scpt`)
+        await writeFile(scptFile, appleScript)
+        await chmod(scptFile, '0777')
+        try {
+          await execPromise(`osascript ./${basename(scptFile)}`, {
+            cwd: global.Server.Cache!
+          })
+          await remove(scptFile)
+        } catch (e) {
+          await remove(scptFile)
+          return reject(e)
+        }
+        resolve(true)
+      } else {
+        const terminalSH = join(global.Server.Static!, 'sh/exec-by-terminal.sh')
+        const exeSH = join(global.Server.Cache!, `${uuid()}.sh`)
+        await copyFile(terminalSH, exeSH)
+        await chmod(exeSH, '0755')
+
+        try {
+          await execPromise(`"${exeSH}" "cd \\"${dir}\\""`, {
+            cwd: global.Server.Cache!
+          })
+          await remove(exeSH)
+          resolve(true)
+        } catch (e) {
+          await remove(exeSH)
+          return reject(e)
+        }
       }
-      const scptFile = join(global.Server.Cache!, `${uuid()}.scpt`)
-      await writeFile(scptFile, appleScript)
-      await chmod(scptFile, '0777')
-      try {
-        await execPromise(`osascript ./${basename(scptFile)}`, {
-          cwd: global.Server.Cache!
-        })
-        await remove(scptFile)
-      } catch (e) {
-        await remove(scptFile)
-        return reject(e)
-      }
-      resolve(true)
     })
   }
 
@@ -618,29 +660,57 @@ end tell`
       }
       const contentBack = content
 
-      const shfile = `/Applications/FlyEnv.app/Contents/Resources/helper/flyenv.sh`
-      if (!existsSync(shfile)) {
-        const fileContent = await readFile(join(global.Server.Static!, 'sh/fly-env.sh'), 'utf-8')
-        try {
-          await Helper.send('tools', 'writeFileByRoot', shfile, fileContent)
-        } catch {}
-        if (existsSync(shfile)) {
-          const uinfo = userInfo()
-          const user = `${uinfo.uid}:${uinfo.gid}`
+      if (isMacOS()) {
+        const shfile = `/Applications/FlyEnv.app/Contents/Resources/helper/flyenv.sh`
+        if (!existsSync(shfile)) {
+          const fileContent = await readFile(join(global.Server.Static!, 'sh/fly-env.sh'), 'utf-8')
           try {
-            await Helper.send('tools', 'chmod', shfile, '777')
-            await Helper.send('redis', 'logFileFixed', shfile, user)
+            await writeFileByRoot(shfile, fileContent)
           } catch {}
+          if (existsSync(shfile)) {
+            const uinfo = userInfo()
+            const user = `${uinfo.uid}:${uinfo.gid}`
+            try {
+              await Helper.send('tools', 'chmod', shfile, '777')
+              await Helper.send('redis', 'logFileFixed', shfile, user)
+            } catch {}
+          }
+        }
+
+        const regex = new RegExp(
+          `^(?!\\s*#)\\s*source\\s*"/Applications/FlyEnv\\.app/Contents/Resources/helper/flyenv\\.sh"`,
+          'gmu'
+        )
+        if (!content.match(regex) && existsSync(file)) {
+          content = content.trim() + `\nsource "${shfile}"`
+        }
+      } else if (isLinux()) {
+        const binDir = PathResolve(global.Server.Static!, '../../../../')
+        const shfile = join(binDir, 'helper/flyenv.sh')
+        if (!existsSync(shfile)) {
+          const fileContent = await readFile(join(global.Server.Static!, 'sh/fly-env.sh'), 'utf-8')
+          try {
+            await writeFileByRoot(shfile, fileContent)
+          } catch {}
+          if (existsSync(shfile)) {
+            const uinfo = userInfo()
+            const user = `${uinfo.uid}:${uinfo.gid}`
+            try {
+              await Helper.send('tools', 'chmod', shfile, '777')
+              await Helper.send('redis', 'logFileFixed', shfile, user)
+            } catch {}
+          }
+        }
+
+        const regex = new RegExp(
+          `^(?!\\s*#)\\s*source\\s*"/(.*?)/resources/helper/flyenv\\.sh"`,
+          'gmu'
+        )
+        if (!content.match(regex) && existsSync(file)) {
+          content = content.trim() + `\nsource "${shfile}"`
         }
       }
 
-      const regex = new RegExp(
-        `^(?!\\s*#)\\s*source\\s*"/Applications/FlyEnv\\.app/Contents/Resources/helper/flyenv\\.sh"`,
-        'gmu'
-      )
-      if (!content.match(regex) && existsSync(file)) {
-        content = content.trim() + `\nsource "${shfile}"`
-      }
       if (content !== contentBack) {
         try {
           await writeFileByRoot(file, content)

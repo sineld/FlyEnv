@@ -31,6 +31,9 @@
   "projectGo": "Go Projeleri",
   "projectPython": "Python Projeleri",
   "projectTomcat": "Tomcat Projeleri",
+  "projectDeno": "Deno Projeleri",
+  "projectBun": "Bun Projeleri",
+  "projectPerl": "Perl Projeleri",
   "jarPackagePath": "JAR Paket Yolu",
   "jdkPath": "JDK Yolu",
   "pythonPath": "Python Yolu",
@@ -65,7 +68,21 @@
   "showFile": "Dosyayı Göster",
   "sticky": "Sabit",
   "dbclickRowToEdit": "Düzenlemek için satıra çift tıklayın",
-  "projectDeno": "Deno Projeleri",
-  "projectBun": "Bun Projeleri",
-  "projectPerl": "Perl Projeleri"
+  "OnlineDomain": "Çevrimiçi Alan Adı",
+  "LocalDoman": "Yerel Alan Adı",
+  "CloudflareTunnel": {
+    "OnlineDomainExistsTips": "Aynı çevrimiçi alan adı zaten mevcut.",
+    "CloudflaredNoFoundTips": "Cloudflared bulunamadı. Lütfen kurun.",
+    "TunnelInitFailTips": "Tünel oluşturma başarısız oldu: {error}. Lütfen ApiToken'ın doğru olduğunu ve Cloudflare Tunnel düzenleme izinlerine sahip olduğunuzu kontrol edin.",
+    "TunnelRule": "Tünel Kuralı",
+    "licenseTips": "Lisans alınmadan, yalnızca bir tünel ve bir grup ana bilgisayar kaydı oluşturabilirsiniz."
+  },
+  "projectRuby": "Ruby Projects",
+  "projectRust": "Rust Projects",
+  "projectZig": "Zig Projects",
+  "ifIsService": "Bir hizmet mi",
+  "runSetting": "Çalışma Ayarları",
+  "exec": "Çalıştır",
+  "runInTerminal": "Terminalde Çalıştır",
+  "portSetting": "Port Ayarları"
 }

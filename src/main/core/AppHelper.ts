@@ -74,20 +74,20 @@ export class AppHelper {
         icns = join(binDir, 'Icon@256x256.icns')
       } else if (isWindows()) {
         const binDir = PathResolve(global.Server.Static!, '../../../../')
-        const srcBin = join(binDir, 'helper-backup/flyenv-helper.exe')
+        // const srcBin = join(binDir, 'helper-backup/flyenv-helper.exe')
         const bin = join(binDir, 'helper/flyenv-helper.exe')
         const tmpl = await readFile(
           join(global.Server.Static!, 'sh/flyenv-auto-start-now.ps1'),
           'utf-8'
         )
         const content = tmpl
-          .replace('#TASKNAME#', 'flyenv-helper')
-          .replace('#SRCEXECPATH#', srcBin)
+          .replace('#TASKNAME#', 'FlyEnvHelperTask')
+          .replace('#SRCEXECPATH#', '')
           .replace('#EXECPATH#', bin)
           .replace('#DATAPATH#', dirname(global.Server.AppDir!))
         const tmpFile = join(tmpDir, `${uuid()}.ps1`)
         await writeFile(tmpFile, content)
-        command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { Unblock-File -LiteralPath '${tmpFile}'; & '${tmpFile}' } finally { Remove-Item -LiteralPath '${tmpDir}' -Recurse -Force -ErrorAction SilentlyContinue }"`
+        command = `"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "try { Unblock-File -LiteralPath '${tmpFile}'; & '${tmpFile}' } finally { Remove-Item -LiteralPath '${tmpDir}' -Recurse -Force -ErrorAction SilentlyContinue }"`
         icns = join(binDir, 'icon.icns')
       }
     } else {
@@ -143,14 +143,14 @@ export class AppHelper {
           'utf-8'
         )
         const content = tmpl
-          .replace('#TASKNAME#', 'flyenv-helper')
+          .replace('#TASKNAME#', 'FlyEnvHelperTask')
           .replace('#SRCEXECPATH#', '')
           .replace('#EXECPATH#', bin)
           .replace('#DATAPATH#', dirname(global.Server.AppDir!))
 
         const tmpFile = join(tmpDir, `${uuid()}.ps1`)
         await writeFile(tmpFile, content)
-        command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { Unblock-File -LiteralPath '${tmpFile}'; & '${tmpFile}' } finally { Remove-Item -LiteralPath '${tmpDir}' -Recurse -Force -ErrorAction SilentlyContinue }"`
+        command = `"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "try { Unblock-File -LiteralPath '${tmpFile}'; & '${tmpFile}' } finally { Remove-Item -LiteralPath '${tmpDir}' -Recurse -Force -ErrorAction SilentlyContinue }"`
         icns = join(binDir, 'icon.icns')
       }
     }
@@ -158,6 +158,12 @@ export class AppHelper {
     return {
       command,
       icns
+    }
+  }
+
+  needInstall() {
+    if (this.state === 'normal') {
+      this?._onMessage?.('needInstall')
     }
   }
 
@@ -205,11 +211,9 @@ export class AppHelper {
       this.state = 'installing'
 
       const { command, icns } = await this.command()
-      await mkdirp(global.Server.Cache!)
       Sudo(command, {
         name: 'FlyEnv',
-        icns: icns,
-        dir: global.Server.Cache!
+        icns: icns
       })
         .then(({ stdout, stderr }) => {
           console.log('initHelper: ', stdout, stderr)

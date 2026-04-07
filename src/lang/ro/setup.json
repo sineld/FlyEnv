@@ -6,7 +6,6 @@
   "ustc": "Sursa de descărcare a Universităţii de Ştiinţă şi Tehnologie din China",
   "Licenses": "Licenta",
   "requestedTips": "Cererea de licenţă a fost trimisă, vă rugăm să aveţi răbdare şi să aşteptaţi dacă aveţi nevoie să modificaţi informaţia, o puteţi retrimite",
-  "licenseActivated": "Licență activată",
   "autoStartService": "Servicii de pornire automată",
   "autoStartServiceTips": "Începerea automată a serviciilor la pornirea aplicației",
   "autoHide": "Începe Ascunderea / Minimizarea în Tăiere",
@@ -45,5 +44,10 @@
   },
   "flyenvHelper": "Fix Helper FlyEnv",
   "flyenvHelperBtn": "Repară",
-  "flyenvHelperFixSuccess": "FlyEnv Helper fixat cu succes"
+  "flyenvHelperFixSuccess": "FlyEnv Helper fixat cu succes",
+  "flyenvHelperInstallFailTips": "Instalarea programului FlyEnv helper a eșuat. Încercați să rulați FlyEnv cu privilegii de administrator sau faceți clic pe butonul OK și rulați manual programul flyenv-helper.exe din folderul deschis.",
+  "appFont": "Fontul interfeței",
+  "appFontTips": "Setați fontul utilizat pentru interfața aplicației. Lăsați gol pentru a utiliza fontul implicit al sistemului",
+  "codeFont": "Fontul codului",
+  "codeFontTips": "Setați fontul utilizat pentru terminal, editor și alte zone de cod. Lăsați gol pentru a utiliza fontul monospace implicit"
 }

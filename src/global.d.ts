@@ -27,6 +27,7 @@ export interface ServerType {
   Lang?: string
   Local?: string
   MacPorts?: string
+  SdkmanHome?: string
   ForceStart?: boolean
   UserHome?: string
   Licenses?: string
@@ -35,6 +36,7 @@ export interface ServerType {
   isMacOS?: boolean
   isLinux?: boolean
   isWindows?: boolean
+  APPVersion?: string
 }
 
 declare global {
@@ -46,14 +48,21 @@ declare global {
   var __static: string
   // @ts-ignore
   var launcher: Launcher
+  // @ts-ignore
+  var bundleEnv: {
+    arch: string
+    target: string
+  }
 
   interface Window {
     openDir: (dir: string) => void
     openUrl: (url: string) => void
+    queryLocalFonts: () => any
     FlyEnvNodeAPI: {
       ipcSendToMain: (...args: any[]) => void
       ipcReceiveFromMain: (callback: (event: any, ...args: any[]) => void) => void
       showFilePath: (file: File) => string
+      getSystemFonts: () => Promise<string[]>
     }
   }
 }

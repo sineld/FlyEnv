@@ -3,7 +3,17 @@ import { existsSync } from 'fs'
 import { Base } from '../Base'
 import { I18nT } from '@lang/index'
 import type { AppHost, SoftInstalled } from '@shared/app'
-import { hostAlias, uuid, remove, writeFile, machineId, readdir, execPromise } from '../../Fn'
+import {
+  hostAlias,
+  uuid,
+  writeFile,
+  machineId,
+  readdir,
+  execPromise,
+  removeByRoot,
+  readFileByRoot,
+  writeFileByRoot
+} from '../../Fn'
 import { ForkPromise } from '@shared/ForkPromise'
 import { makeCaddyConf, updateCaddyConf } from './Caddy'
 import { makeApacheConf, updateApacheConf } from './Apache'
@@ -15,6 +25,7 @@ import { fetchHostList, saveHostList } from './HostFile'
 import Helper from '../../Helper'
 import { appDebugLog, isLinux, isMacOS, isWindows } from '@shared/utils'
 import { HostsFileLinux, HostsFileMacOS, HostsFileWindows } from '@shared/PlatFormConst'
+import { AppHelperCheck } from '@shared/AppHelperCheck'
 
 export class Host extends Base {
   hostsFile = ''
@@ -253,17 +264,9 @@ export class Host extends Base {
       ]
       for (const f of arr) {
         if (existsSync(f)) {
-          let hasError = false
           try {
-            await remove(f)
-          } catch {
-            hasError = true
-          }
-          if (hasError) {
-            try {
-              await Helper.send('tools', 'rm', f)
-            } catch {}
-          }
+            await removeByRoot(f)
+          } catch {}
         }
       }
       resolve(true)
@@ -336,8 +339,14 @@ export class Host extends Base {
     })
   }
 
-  _initHost(list: Array<AppHost>, writeToSystem = true, ipv6: boolean) {
+  _initHost(list: Array<AppHost>, writeToSystem = true, ipv6: boolean): ForkPromise<boolean> {
     return new ForkPromise(async (resolve, reject) => {
+      const hostfile = join(global.Server.BaseDir!, 'host.json')
+      if (!existsSync(hostfile)) {
+        resolve(false)
+        return
+      }
+
       const allHost: Set<string> = new Set<string>()
       const host: Array<string> = []
       for (const item of list) {
@@ -356,14 +365,7 @@ export class Host extends Base {
       })
       await writeFile(join(global.Server.BaseDir!, 'app.hosts.txt'), host.join('\n'))
       if (!writeToSystem) {
-        try {
-          if (isWindows()) {
-            await execPromise('ipconfig /flushdns')
-          } else {
-            await Helper.send('host', 'dnsRefresh')
-          }
-        } catch {}
-        resolve(true)
+        resolve(false)
         return
       }
       if (!existsSync(this.hostsFile)) {
@@ -371,34 +373,33 @@ export class Host extends Base {
         return
       }
       let content: string = ''
-      content = (await Helper.send('tools', 'readFileByRoot', this.hostsFile)) as string
+      content = (await readFileByRoot(this.hostsFile)) as string
       let x: any = content.match(/(#X-HOSTS-BEGIN#)([\s\S]*?)(#X-HOSTS-END#)/g)
       if (x && x[0]) {
         x = x[0]
         content = content.replace(x, '')
       }
-      if (host) {
+      if (host.length) {
         x = `#X-HOSTS-BEGIN#\n${host.join('\n')}\n#X-HOSTS-END#`
       } else {
         x = ''
       }
       content = content.trim()
       content += `\n${x}`
-      await Helper.send('tools', 'writeFileByRoot', this.hostsFile, content.trim())
-
-      try {
-        if (isWindows()) {
-          await execPromise('ipconfig /flushdns')
-        } else {
-          await Helper.send('host', 'dnsRefresh')
-        }
-      } catch {}
-      resolve(true)
+      await writeFileByRoot(this.hostsFile, content.trim())
+      resolve(x.length > 0)
     })
   }
 
   writeHosts(write = true, ipv6 = true) {
     return new ForkPromise(async (resolve, reject) => {
+      const hostfile = join(global.Server.BaseDir!, 'host.json')
+      if (!existsSync(hostfile)) {
+        resolve(true)
+        return
+      }
+
+      let hasChanged = false
       let appHost: AppHost[] = []
       try {
         appHost = await fetchHostList()
@@ -408,27 +409,43 @@ export class Host extends Base {
       }
       console.log('writeHosts: ', write)
       if (write) {
+        let changed = false
         try {
-          this._initHost(appHost, true, ipv6)
-        } catch {}
+          changed = await this._initHost(appHost, true, ipv6)
+        } catch {
+          changed = false
+        }
+        hasChanged = hasChanged || changed
       } else {
-        let hosts: any = await Helper.send('tools', 'readFileByRoot', this.hostsFile)
+        let hosts: any = await readFileByRoot(this.hostsFile)
         const x = hosts.match(/(#X-HOSTS-BEGIN#)([\s\S]*?)(#X-HOSTS-END#)/g)
         if (x) {
+          const urls = (x?.[2] ?? '').trim()
+          hasChanged = urls !== ''
           hosts = hosts.replace(x[0], '')
-          await Helper.send('tools', 'writeFileByRoot', this.hostsFile, hosts.trim())
+          await writeFileByRoot(this.hostsFile, hosts.trim())
         }
+        let changed = false
         try {
-          this._initHost(appHost, false, ipv6)
+          changed = await this._initHost(appHost, false, ipv6)
+        } catch {
+          changed = false
+        }
+        hasChanged = hasChanged || changed
+      }
+      if (hasChanged && existsSync(hostfile)) {
+        try {
+          if (isWindows()) {
+            await execPromise('ipconfig /flushdns')
+          } else {
+            if (Helper.enable) {
+              await Helper.send('host', 'dnsRefresh')
+            } else if (await AppHelperCheck()) {
+              await Helper.send('host', 'dnsRefresh')
+            }
+          }
         } catch {}
       }
-      try {
-        if (isWindows()) {
-          await execPromise('ipconfig /flushdns')
-        } else {
-          await Helper.send('host', 'dnsRefresh')
-        }
-      } catch {}
       resolve(true)
     })
   }

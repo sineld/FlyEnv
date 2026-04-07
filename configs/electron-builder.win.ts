@@ -3,8 +3,8 @@ import AfterSign from '../build/afterSign'
 
 const conf: Configuration = {
   productName: 'FlyEnv',
-  executableName: 'PhpWebStudy',
-  buildVersion: '4.13.0',
+  executableName: 'FlyEnv',
+  buildVersion: '4.14.0',
   electronVersion: '35.7.5',
   appId: 'phpstudy.xpfme.com',
   asar: true,
@@ -45,10 +45,12 @@ const conf: Configuration = {
   },
   nsis: {
     oneClick: false,
-    allowToChangeInstallationDirectory: true
+    allowToChangeInstallationDirectory: true,
+    allowElevation: true
   },
   portable: {
-    artifactName: 'FlyEnv-Portable-${version}.${ext}'
+    artifactName: 'FlyEnv-Portable-${version}.${ext}',
+    unpackDirName: 'FlyEnv-Portable-${version}'
   },
   publish: [],
   afterSign: AfterSign

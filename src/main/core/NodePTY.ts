@@ -66,10 +66,16 @@ class NodePTY {
           data: ''
         }
       } else if (isWindows()) {
+        const env = await EnvSync.sync()
+        Object.assign(env!, {
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor'
+        })
         const pty: IPty = spawn('powershell.exe', [], {
           name: 'xterm-color',
           cols: 80,
           rows: 34,
+          env,
           cwd: process.cwd(),
           encoding: 'utf8'
         })
@@ -188,14 +194,27 @@ class NodePTY {
         remove(tmplFile).catch()
       })
       const pty = this.pty?.[ptyKey]?.pty
-      param.forEach((s) => {
-        pty?.write(`${s}\r`)
-      })
+      // param.forEach((s) => {
+      //   pty?.write(`${s}\r`)
+      // })
+      // if (isWindows()) {
+      //   pty?.write(`"END" | Out-File -FilePath "${tmplFile}"\r`)
+      // } else {
+      //   pty?.write(`echo "END" > "${tmplFile}"\r`)
+      // }
+
+      // ===== 修改的核心逻辑 =====
       if (isWindows()) {
-        pty?.write(`"END" | Out-File -FilePath "${tmplFile}"\r`)
+        // Windows PowerShell 使用 ';' 按顺序执行
+        const cmdStr = param.join(' ; ')
+        pty?.write(`${cmdStr} ; "END" | Out-File -FilePath "${tmplFile}"\r`)
       } else {
-        pty?.write(`echo "END" > "${tmplFile}"\r`)
+        // macOS / Linux 使用 '&&' 确保前置命令成功后再执行下一步
+        const cmdStr = param.join(' && ')
+        pty?.write(`${cmdStr} && echo "END" > "${tmplFile}"\r`)
       }
+      // ===========================
+
       const task = this.pty?.[ptyKey]
       task?.task?.push({
         command,

@@ -5,7 +5,7 @@
   "copyConfTemplate": "Konfigurationsvorlage kopieren",
   "extensionCopySuccess": "Erweiterungs-Link in Zwischenablage kopiert",
   "xdebugConfCopySuccess": "xdebug Konfigurationsvorlage in Zwischenablage kopiert",
-  "fpmLog": "FPM Log",
+  "fpmLog": "FPM-Protokoll",
   "extensions": "Erweiterungen",
   "extension": "Erweiterung",
   "obfuscatorPhpVersion": "Mit PHP-Version verbergen",
@@ -28,5 +28,12 @@
   "timezone": "Zeitzone",
   "loadedExtensions": "Geladene Erweiterungen",
   "log_errors": "Fehlerprotokollierung aktivieren",
-  "error_log_dir": "Gib den Pfad zur PHP-Fehlerprotokolldatei an."
+  "error_log_dir": "Gib den Pfad zur PHP-Fehlerprotokolldatei an.",
+  "disableFunction": {
+    "title": "Funktionen deaktivieren",
+    "function": "Funktion",
+    "emptyFunction": "Bitte geben Sie den Funktionsnamen ein",
+    "sameName": "Funktion existiert bereits",
+    "invalidName": "Ungültiger Funktionsname. Funktionsname darf nur Buchstaben, Zahlen und Unterstriche enthalten"
+  }
 }

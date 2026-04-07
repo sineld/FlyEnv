@@ -45,6 +45,8 @@
   "fileVarTips": "Valitse ympäristömuuttujan tiedosto",
   "tcpPort": "Tcp Portti",
   "reverseProxy": "Käänteinen Välityspalvelin",
+  "OnlineDomain": "Verkkotunnus",
+  "LocalDoman": "Paikallinen Verkkotunnus",
   "projectName": "Projektin Nimi",
   "customJDKAndTomcat": "Mukautettu JDK&Tomcat",
   "useSSL": "Käytä SSL:ää",
@@ -67,5 +69,20 @@
   "copyCommand": "Kopioi Komento",
   "showFile": "Näytä Tiedosto",
   "sticky": "Kiinni",
-  "dbclickRowToEdit": "Kaksoisnapsauta tätä riviä muokataksesi"
+  "dbclickRowToEdit": "Kaksoisnapsauta tätä riviä muokataksesi",
+  "CloudflareTunnel": {
+    "OnlineDomainExistsTips": "Sama verkkotunnus on jo olemassa.",
+    "CloudflaredNoFoundTips": "Cloudflared ei löytynyt. Asenna se.",
+    "TunnelInitFailTips": "Tunnelin luominen epäonnistui: {error}. Tarkista onko ApiToken oikea ja varmista, että sinulla on Cloudflare Tunnel -muokkausoikeudet.",
+    "TunnelRule": "Tunnelisääntö",
+    "licenseTips": "Ilman lisenssiä voit luoda vain yhden tunnelin ja yhden joukon host-tietueita."
+  },
+  "projectRuby": "Ruby Projects",
+  "projectRust": "Rust Projects",
+  "projectZig": "Zig Projects",
+  "ifIsService": "Onko se palvelu",
+  "runSetting": "Suoritusasetukset",
+  "exec": "Suorita",
+  "runInTerminal": "Suorita päätteessä",
+  "portSetting": "Porttiasetukset"
 }

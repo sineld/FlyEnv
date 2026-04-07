@@ -1,8 +1,7 @@
-import { writeFile } from '@shared/fs-extra'
-import Helper from '../fork/Helper'
+import { mkdirp, writeFile } from '@shared/fs-extra'
 import { createConnection } from 'node:net'
 import { userInfo } from 'node:os'
-import { basename } from 'node:path'
+import { basename, dirname } from 'node:path'
 import { isWindows } from './utils'
 import JSON5 from 'json5'
 
@@ -31,13 +30,15 @@ export const AppHelperRoleFix = async () => {
   const role = `${uinfo.uid}:${uinfo.gid}`
   await writeFile(Role_Path, role)
   try {
-    Helper.send('tools', 'writeFileByRoot', Role_Path_Back, role).catch()
+    await mkdirp(dirname(Role_Path_Back))
+    await writeFile(Role_Path_Back, role)
   } catch {}
 }
 
 export const AppHelperCheck = () => {
   return new Promise(async (resolve, reject) => {
     console.time('AppHelper check')
+    let timer: NodeJS.Timeout | undefined
     const key = 'flyenv-helper-version-check'
     const buffer: Buffer[] = []
     const client = createConnection(AppHelperSocketPathGet())
@@ -49,18 +50,19 @@ export const AppHelperCheck = () => {
         function: 'version'
       }
       client.write(JSON.stringify(param))
+      timer = setTimeout(() => {
+        onEnd()
+      }, 2000)
     })
 
-    client.on('data', (data: any) => {
-      buffer.push(data)
-      client.end()
-    })
-
-    client.on('end', () => {
-      console.log('Disconnected from the server')
+    const onEnd = () => {
+      clearTimeout(timer)
       try {
         client.destroySoon()
       } catch {}
+      if (!buffer.length) {
+        return reject(new Error(`Helper Need Install Or Update`))
+      }
       let res: any
       try {
         const content = Buffer.concat(buffer).toString().trim()
@@ -78,6 +80,16 @@ export const AppHelperCheck = () => {
         }
       }
       return reject(new Error(`Helper Need Install Or Update`))
+    }
+
+    client.on('data', (data: any) => {
+      buffer.push(data)
+      client.end()
+    })
+
+    client.on('end', () => {
+      console.log('Disconnected from the server')
+      onEnd()
     })
 
     client.on('error', () => {

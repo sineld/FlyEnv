@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+  import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
   import TitleBar from './components/Native/TitleBar.vue'
   import IPC from '@/util/IPC'
   import { AppStore } from '@/store/app'
@@ -19,15 +19,11 @@
   import VueSvg from '@/components/VueSvgIcon/svg.vue'
   import { Module } from '@/core/Module/Module'
   import type { AllAppModule, AppModuleEnum } from '@/core/type'
-  import { nativeTheme, shell } from '@/util/NodeFn'
-  import localForage from 'localforage'
+  import { shell } from '@/util/NodeFn'
+  import { AppUI } from '@/util/UI'
 
   const appStore = AppStore()
   const brewStore = BrewStore()
-
-  const lang = computed(() => {
-    return appStore.config.setup.lang
-  })
 
   const showItem = computed(() => {
     return appStore.config.setup.common.showItem
@@ -135,7 +131,7 @@
     if (appStore?.config?.setup?.proxy?.on) {
       return
     }
-    const checked = localStorage.getItem('PhpWebStudy-Checked-Proxy')
+    const checked = localStorage.getItem('FlyEnv-Checked-Proxy')
     if (checked) {
       return
     }
@@ -157,44 +153,14 @@
           appStore.saveConfig()
           MessageSuccess(I18nT('tools.systemProxyUsed'))
         })
-        localStorage.setItem('PhpWebStudy-Checked-Proxy', 'true')
+        localStorage.setItem('FlyEnv-Checked-Proxy', 'true')
       }
     })
   }
 
   IPC.on('application:about').then(showAbout)
 
-  watch(
-    lang,
-    (val) => {
-      const body = document.body
-      body.className = `lang-${val}`
-    },
-    {
-      immediate: true
-    }
-  )
-
-  const isDark = ref(false)
-  nativeTheme.shouldUseDarkColors().then((e) => {
-    isDark.value = e
-  })
-  const theme = computed(() => {
-    const t = appStore?.config?.setup?.theme
-    if (!t) {
-      return isDark.value ? 'dark' : 'light'
-    }
-    return t
-  })
-  watch(
-    theme,
-    (val) => {
-      localForage.setItem('flyenv-app-theme', val).catch()
-    },
-    {
-      immediate: true
-    }
-  )
+  AppUI()
 
   onMounted(() => {
     init()

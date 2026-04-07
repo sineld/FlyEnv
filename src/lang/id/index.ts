@@ -30,9 +30,15 @@ import requestTimer from './requestTimer.json'
 import meilisearch from './meilisearch.json'
 import minio from './minio.json'
 import podman from './podman.json'
+import openclawID from './openclaw.json'
+import n8n from './n8n.json'
+import rustfsID from './rustfs.json'
 
 export default {
   id: {
+    rustfs: rustfsID,
+    n8n,
+    openclaw: openclawID,
     podman,
     minio,
     meilisearch,

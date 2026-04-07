@@ -250,13 +250,14 @@
     }
   }
   const doExport = () => {
-    const opt = ['showHiddenFiles', 'createDirectory', 'showOverwriteConfirmation']
+    const opt: any = ['showHiddenFiles', 'createDirectory', 'showOverwriteConfirmation']
     dialog
       .showSaveDialog({
         properties: opt,
         defaultPath: 'hosts-custom.json',
         filters: [
           {
+            name: 'JSON File',
             extensions: ['json']
           }
         ]
@@ -289,12 +290,12 @@
       })
   }
   const doImport = () => {
-    const opt = ['openFile', 'showHiddenFiles']
     dialog
       .showOpenDialog({
-        properties: opt,
+        properties: ['openFile', 'showHiddenFiles'],
         filters: [
           {
+            name: 'JSON File',
             extensions: ['json']
           }
         ]

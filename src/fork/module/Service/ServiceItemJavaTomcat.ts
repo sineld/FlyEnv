@@ -16,8 +16,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import { ServiceItem } from './ServiceItem'
 import { ForkPromise } from '@shared/ForkPromise'
 import { fetchHostList } from '../Host/HostFile'
-import Helper from '../../Helper'
-import { ProcessPidsByPid } from '@shared/Process'
+import { ProcessListFetch, ProcessPidsByPid } from '@shared/Process'
 import { defaultShell, isMacOS, isWindows } from '@shared/utils'
 import { ProcessPidListByPid } from '@shared/Process.win'
 import { EOL } from 'os'
@@ -42,13 +41,13 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
   const handlePort = (host: AppHost) => {
     const port = host?.port?.tomcat ?? 80
     if (!serverXML.Server.Service.Connector) {
-      const xml = `<Connector appFlag="PhpWebStudy" port="${port}" protocol="HTTP/1.1" connectionTimeout="60000"/>`
+      const xml = `<Connector appFlag="FlyEnv" port="${port}" protocol="HTTP/1.1" connectionTimeout="60000"/>`
       const xmlObj = parser.parse(xml)
       serverXML.Server.Service.Connector = xmlObj.Connector
     } else if (!Array.isArray(serverXML.Server.Service.Connector)) {
       if (`${serverXML.Server.Service.Connector.port}` !== `${port}`) {
         serverXML.Server.Service.Connector = [serverXML.Server.Service.Connector]
-        const xml = `<Connector appFlag="PhpWebStudy" port="${port}" protocol="HTTP/1.1" connectionTimeout="60000"/>`
+        const xml = `<Connector appFlag="FlyEnv" port="${port}" protocol="HTTP/1.1" connectionTimeout="60000"/>`
         const xmlObj = parser.parse(xml)
         serverXML.Server.Service.Connector.push(xmlObj.Connector)
       }
@@ -65,7 +64,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
       console.log('find: ', find)
       if (!find) {
         const arr = [
-          `<Connector appFlag="PhpWebStudy" port="${port}" protocol="org.apache.coyote.http11.Http11NioProtocol"
+          `<Connector appFlag="FlyEnv" port="${port}" protocol="org.apache.coyote.http11.Http11NioProtocol"
                    maxThreads="150" SSLEnabled="true" scheme="https">`,
           `<SSLHostConfig sslProtocol="TLS" certificateVerification="false">
                 <Certificate certificateFile="${host.ssl.cert}"
@@ -74,7 +73,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
             </SSLHostConfig>`
         ]
         hostAlias(host).forEach((h) => {
-          arr.push(`<SSLHostConfig appFlag="PhpWebStudy" hostName="${h}" sslProtocol="TLS" certificateVerification="false">
+          arr.push(`<SSLHostConfig appFlag="FlyEnv" hostName="${h}" sslProtocol="TLS" certificateVerification="false">
                 <Certificate certificateFile="${host.ssl.cert}"
                              certificateKeyFile="${host.ssl.key}"
                              type="RSA"/>
@@ -87,7 +86,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
         const hostConfig = find.SSLHostConfig
         if (!hostConfig) {
           const arr = [
-            `<Connector appFlag="PhpWebStudy" port="${port}" protocol="org.apache.coyote.http11.Http11NioProtocol"
+            `<Connector appFlag="FlyEnv" port="${port}" protocol="org.apache.coyote.http11.Http11NioProtocol"
                    maxThreads="150" SSLEnabled="true" scheme="https">`,
             `<SSLHostConfig sslProtocol="TLS" certificateVerification="false">
                 <Certificate certificateFile="${host.ssl.cert}"
@@ -96,7 +95,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
             </SSLHostConfig>`
           ]
           hostAlias(host).forEach((h) => {
-            arr.push(`<SSLHostConfig appFlag="PhpWebStudy" hostName="${h}" sslProtocol="TLS" certificateVerification="false">
+            arr.push(`<SSLHostConfig appFlag="FlyEnv" hostName="${h}" sslProtocol="TLS" certificateVerification="false">
                 <Certificate certificateFile="${host.ssl.cert}"
                              certificateKeyFile="${host.ssl.key}"
                              type="RSA"/>
@@ -109,7 +108,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
           hostAlias(host).forEach((h) => {
             const findHost = hostConfig.find((c: any) => c.hostName === h)
             if (!findHost) {
-              const str = `<SSLHostConfig appFlag="PhpWebStudy" hostName="${h}" sslProtocol="TLS" certificateVerification="false">
+              const str = `<SSLHostConfig appFlag="FlyEnv" hostName="${h}" sslProtocol="TLS" certificateVerification="false">
                 <Certificate certificateFile="${host.ssl.cert}"
                              certificateKeyFile="${host.ssl.key}"
                              type="RSA"/>
@@ -138,7 +137,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
     if (!hosts) {
       const arr: string[] = []
       hostAlias(host).forEach((h) => {
-        arr.push(`<Host name="${h}" appBase="${host.root}" appFlag="PhpWebStudy"
+        arr.push(`<Host name="${h}" appBase="${host.root}" appFlag="FlyEnv"
                   unpackWARs="true" autoDeploy="true">
                 <Context path="" docBase=""></Context>
                 <Valve className="org.apache.catalina.valves.AccessLogValve" directory="${logDir}"
@@ -158,7 +157,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
         if (findHost) {
           findHost.appBase = host.root
         } else {
-          const str = `<Host name="${h}" appBase="${host.root}" appFlag="PhpWebStudy"
+          const str = `<Host name="${h}" appBase="${host.root}" appFlag="FlyEnv"
                   unpackWARs="true" autoDeploy="true">
                   <Context path="" docBase=""></Context>
                 <Valve className="org.apache.catalina.valves.AccessLogValve" directory="${logDir}"
@@ -179,9 +178,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
     if (!Array.isArray(serverXML.Server.Service.Connector)) {
       return
     }
-    const allApp = serverXML.Server.Service.Connector.filter(
-      (c: any) => c.appFlag === 'PhpWebStudy'
-    )
+    const allApp = serverXML.Server.Service.Connector.filter((c: any) => c.appFlag === 'FlyEnv')
     const dels: any[] = []
     for (const c of allApp) {
       const port = Number(c.port)
@@ -200,7 +197,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
   const cleanVhost = (allName: Set<string>) => {
     if (Array.isArray(serverXML.Server.Service.Engine.Host)) {
       const allHost = serverXML.Server.Service.Engine.Host.filter(
-        (c: any) => c.appFlag === 'PhpWebStudy'
+        (c: any) => c.appFlag === 'FlyEnv'
       )
       const dels: any[] = []
       for (const c of allHost) {
@@ -218,7 +215,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
     }
     if (Array.isArray(serverXML.Server.Service.Connector)) {
       for (const Connector of serverXML.Server.Service.Connector) {
-        if (Connector?.appFlag !== 'PhpWebStudy') {
+        if (Connector?.appFlag !== 'FlyEnv') {
           continue
         }
         const SSLHostConfig = Connector.SSLHostConfig
@@ -227,7 +224,7 @@ export const makeTomcatServerXML = (cnfDir: string, serverContent: string, hostA
         }
         const dels: any[] = []
         for (const c of SSLHostConfig) {
-          if (c?.appFlag !== 'PhpWebStudy') {
+          if (c?.appFlag !== 'FlyEnv') {
             continue
           }
           const name = c.hostName
@@ -276,7 +273,8 @@ export const makeGlobalTomcatServerXML = async (version: SoftInstalled) => {
   await mkdirp(vhostDir)
 
   const configFile = join(version.path, 'conf/server.xml')
-  const serverContent = await readFile(configFile, 'utf-8')
+  let serverContent = await readFile(configFile, 'utf-8')
+  serverContent = serverContent.replace(new RegExp('PhpWebStudy', 'g'), 'FlyEnv')
 
   const defaultFile = join(version.path, 'conf/server.xml.default')
   if (!existsSync(defaultFile)) {
@@ -323,6 +321,7 @@ export const makeCustomTomcatServerXML = async (host: AppHost) => {
   let serverContent = ''
   if (existsSync(configFile)) {
     serverContent = await readFile(configFile, 'utf-8')
+    serverContent = serverContent.replace(new RegExp('PhpWebStudy', 'g'), 'FlyEnv')
   } else {
     const configFile = pathResolve(tomcatDir, '../../conf/server.xml')
     serverContent = await readFile(configFile, 'utf-8')
@@ -445,7 +444,7 @@ export class ServiceItemJavaTomcat extends ServiceItem {
     if (isWindows()) {
       return await ProcessPidListByPid(pid)
     } else {
-      const plist: any = await Helper.send('tools', 'processList')
+      const plist: any = await ProcessListFetch()
       return ProcessPidsByPid(pid, plist)
     }
   }

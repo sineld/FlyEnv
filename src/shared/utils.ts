@@ -1,12 +1,14 @@
 import crypto from 'node:crypto'
-import { cpus } from 'node:os'
+import { cpus, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { platform } from 'node:os'
 import { appendFile } from './fs-extra'
+import { normalize } from 'pathe'
 
 export async function appDebugLog(flag: string, info: string) {
+  console.log('appDebugLog: ', flag, info)
   try {
-    const debugFile = join(global.Server.BaseDir!, 'debug.log')
+    const debugFile = join(tmpdir(), 'flyenv-debug.log')
     await appendFile(debugFile, `${flag}: ${info}\n`)
   } catch {
     /* empty */
@@ -50,12 +52,7 @@ export function md5(str: string) {
 }
 
 export function pathFixedToUnix(path: string) {
-  const needAdd = path.endsWith('\\')
-  const p = path
-    .split('\\')
-    .filter((s) => !!s.trim())
-    .join('/')
-  return needAdd ? `${p}/` : p
+  return normalize(path)
 }
 
 const os = platform()

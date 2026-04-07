@@ -6,7 +6,6 @@
   "ustc": "Źródło pobierania przez Uniwersytet Nauki i Technologii Chin",
   "Licenses": "Licencja",
   "requestedTips": "Prośba o licencję została wysłana, prosimy o cierpliwość i zaczekaj, jeśli chcesz zmodyfikować informacje, możesz ją wysłać ponownie",
-  "licenseActivated": "Licencja aktywowana",
   "autoStartService": "Uruchom usługi automatycznie",
   "autoStartServiceTips": "Czy uruchamiać usługi automatycznie po uruchomieniu aplikacji",
   "autoHide": "Rozpocznij ukryte / zminimalizowane do zasobnika",
@@ -45,5 +44,10 @@
   },
   "flyenvHelper": "Napraw pomocnik FlyEnv",
   "flyenvHelperBtn": "Napraw",
-  "flyenvHelperFixSuccess": "Pomocnik FlyEnv został naprawiony"
+  "flyenvHelperFixSuccess": "Pomocnik FlyEnv został naprawiony",
+  "flyenvHelperInstallFailTips": "Instalacja programu pomocniczego FlyEnv nie powiodła się. Spróbuj uruchomić FlyEnv z uprawnieniami administratora lub kliknij przycisk OK i ręcznie uruchom program pomocniczy flyenv-helper.exe w otwartym folderze.",
+  "appFont": "Czcionka interfejsu",
+  "appFontTips": "Ustaw czcionkę używaną w interfejsie aplikacji. Pozostaw puste, aby użyć domyślnej czcionki systemowej",
+  "codeFont": "Czcionka kodu",
+  "codeFontTips": "Ustaw czcionkę używaną w terminalu, edytorze i innych obszarach kodu. Pozostaw puste, aby użyć domyślnej czcionki o stałej szerokości"
 }

@@ -1,5 +1,9 @@
-import { address } from 'neoip'
 import { BrowserWindow, clipboard, nativeTheme, app, dialog, shell } from 'electron'
+import {
+  getAllLocalIPAddresses,
+  getPrimaryLocalIPAddress,
+  type NetworkInterfaceInfo
+} from '@shared/network'
 import { createRequire } from 'node:module'
 import ConfigManager from './ConfigManager'
 import { execPromise } from '@shared/child-process'
@@ -81,9 +85,22 @@ export class AppNodeFn {
     this?.mainWindow?.webContents.send('command', command, key, { types, extensions })
   }
 
+  /**
+   * 获取单个IP地址（向后兼容）
+   * 优先返回物理网卡的真实局域网IP
+   */
   ip_address(command: string, key: string) {
-    const ip = address() ?? ''
+    const ip = getPrimaryLocalIPAddress()
     this?.mainWindow?.webContents.send('command', command, key, ip)
+  }
+
+  /**
+   * 获取所有可用的IP地址列表
+   * 供用户选择使用哪个IP（用于DNS、FTP等服务）
+   */
+  ip_address_list(command: string, key: string) {
+    const list: NetworkInterfaceInfo[] = getAllLocalIPAddresses()
+    this?.mainWindow?.webContents.send('command', command, key, list)
   }
 
   clipboard_writeText(command: string, key: string, txt: string) {
@@ -308,6 +325,12 @@ X-GNOME-Autostart-enabled=true`
     })
   }
 
+  dialog_showMessageBox(command: string, key: string, options: Electron.MessageBoxOptions) {
+    dialog.showMessageBox(options).then((result) => {
+      this?.mainWindow?.webContents.send('command', command, key, result)
+    })
+  }
+
   shell_showItemInFolder(command: string, key: string, fullPath: string) {
     shell.showItemInFolder(fullPath)
     this?.mainWindow?.webContents.send('command', command, key, true)
@@ -483,7 +506,8 @@ X-GNOME-Autostart-enabled=true`
       .then(() => {
         this?.mainWindow?.webContents.send('command', command, key, true)
       })
-      .catch(() => {
+      .catch((e) => {
+        console.error('fs_writeFile error: ', e)
         Helper.send('tools', 'writeFileByRoot', path, data)
           .then(() => {
             this?.mainWindow?.webContents.send('command', command, key, true)
@@ -552,9 +576,10 @@ X-GNOME-Autostart-enabled=true`
     command: string,
     key: string,
     file: string,
-    algorithm: 'sha1' | 'sha256' | 'md5' = 'sha256'
+    algorithm: 'sha1' | 'sha256' | 'md5' | 'sha512' | 'sha512Base64' = 'sha256'
   ) {
-    const hash = crypto.createHash(algorithm)
+    const algo = algorithm === 'sha512Base64' ? 'sha512' : algorithm
+    const hash = crypto.createHash(algo)
     const stream = createReadStream(file)
 
     stream.on('error', () => {
@@ -566,7 +591,7 @@ X-GNOME-Autostart-enabled=true`
     })
 
     stream.on('end', () => {
-      const md5 = hash.digest('hex')
+      const md5 = algorithm === 'sha512Base64' ? hash.digest('base64') : hash.digest('hex')
       this?.mainWindow?.webContents.send('command', command, key, md5)
     })
   }

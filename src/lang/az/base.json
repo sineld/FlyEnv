@@ -109,11 +109,13 @@
   "staticDelAlert": "İstifadəçi məlumatlarının təhlükəsizliyi üçün artıq quraşdırılmış proqramların avtomatik silinməsi dəstəklənmir. Silmək istəyirsinizsə, \"Təsdiq et\" klikləyin və proqramı açılan qovluqdan əl ilə silin.",
   "placeholderSearch": "Axtar",
   "projects": "Layihələr",
-
   "cleanup": "Təmizləmə",
-
   "preview": "ön izahat",
   "executing": "icra olunur",
   "info": "məlumat",
-  "ForceDelete": "Məcburi sil"
+  "ForceDelete": "Məcburi sil",
+  "needInstallHelperTips": "Bəzi əməliyyatlar uğursuz oldu, çünki Administrator icazələri tələb olunur. Bunlara Hosts faylının dəyişdirilməsi, proseslər siyahısına çıxış, 1024-dən aşağı portlara bağlanma və ya sistem ətraf mühit dəyişənlərinin idarə edilməsi daxildir. Bu tapşırıqlar üçün zəruri icazələri təmin etmək üçün FlyEnv Helper-i quraşdırın. Quraşdırmaya davam etmək üçün \"OK\" düyməsini basın.",
+  "targetPlatforms": "Target Platforms",
+  "baseInfo": "Əsas məlumat",
+  "selectVersion": "Versiya seçin"
 }

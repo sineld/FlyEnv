@@ -2,7 +2,6 @@ import { reactive } from 'vue'
 import { VueExtend } from './core/VueExtend'
 import { AppI18n } from '@lang/index'
 import App from './App.vue'
-// import App from './APPTest.vue'
 import './index.scss'
 import IPC from '@/util/IPC'
 import { AppStore } from '@/store/app'
@@ -17,14 +16,14 @@ import { AppLogStore } from '@/components/AppLog/store'
 import { AppCustomerModule } from '@/core/Module'
 import { lang, nativeTheme } from '@/util/NodeFn'
 import { MessageError, MessageSuccess, MessageWarning } from '@/util/Element'
-import { AsyncComponentShow } from '@/util/AsyncComponent'
 import { FlyEnvHelperSetup } from '@/components/FlyEnvHelper/setup'
 import { isEqual } from 'lodash-es'
 import CapturerSetup from '@/components/Tools/Capturer/setup'
+import HelperStore from '@/store/helper'
 
 window.Server = reactive({}) as any
 
-const app = VueExtend(App)
+const appRoot = VueExtend(App)
 lang.loadCustomerLang().then().catch()
 
 let inited = false
@@ -42,7 +41,7 @@ IPC.on('APP-Ready-To-Show').then((key: string, res: any) => {
         ThemeInit()
         const config = store.config.setup
         AppI18n(config?.lang)
-        app.mount('#app')
+        appRoot.mount('#app')
       })
       .catch()
     SiteSuckerStore().init()
@@ -92,9 +91,9 @@ IPC.on('APP-FlyEnv-Helper-Notice').then((key: string, res: any) => {
   } else if (res.code === 1) {
     MessageError(res?.msg)
     if (res?.status === 'installFaild' && inited && !FlyEnvHelperSetup.show) {
-      import('@/components/FlyEnvHelper/index.vue').then((m) => {
-        AsyncComponentShow(m.default).then()
-      })
+      HelperStore.showInstallFailDialog()
+    } else if (!res?.status) {
+      HelperStore.showNeedInstallDialog()
     }
   } else if (res.code === 2) {
     MessageWarning(res?.msg)

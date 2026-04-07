@@ -11,7 +11,8 @@ export enum AppModuleTypeEnum {
   other = 'other',
   objectStorage = 'objectStorage',
   ai = 'ai',
-  containerRuntime = 'containerRuntime'
+  containerRuntime = 'containerRuntime',
+  networkTunnel = 'networkTunnel'
 }
 
 export type AllAppModuleType = keyof typeof AppModuleTypeEnum
@@ -20,6 +21,7 @@ export const AppModuleTypeList: AllAppModuleType[] = [
   'site',
   'ai',
   'containerRuntime',
+  'networkTunnel',
   'webServer',
   'language',
   'dataBaseServer',
@@ -74,10 +76,17 @@ export enum AppModuleEnum {
   typesense = 'typesense',
   podman = 'podman',
   zig = 'zig',
-  qdrant = 'qdrant'
+  qdrant = 'qdrant',
+  'cloudflare-tunnel' = 'cloudflare-tunnel',
+  cloudflared = 'cloudflared',
+  openclaw = 'openclaw',
+  n8n = 'n8n',
+  rustfs = 'rustfs'
 }
 
 export type AllAppModule = keyof typeof AppModuleEnum
+
+export const AppWithRoot = ['apache', 'nginx', 'caddy', 'pure-ftpd', 'ftp-srv', 'tomcat', 'consul']
 
 type LabelFn = () => string
 
@@ -95,6 +104,7 @@ export type AppModuleItem = {
    * Module icon. display in Tray Window
    */
   icon?: any
+  iconPadding?: number
   /**
    * App left aside module component
    */

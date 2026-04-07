@@ -18,10 +18,10 @@
   "nginxRewriteTips": "Defina a reescrita de URL do Nginx aqui. Para o Apache, por favor, configure no arquivo do projeto.",
   "refresh": "Atualizar",
   "clean": "Limpar",
-  "cleanup": "Limpeza",
   "prompt": "Aviso",
   "delAlertTitle": "Aviso",
   "delAlertContent": "Confirmar exclusão?",
+  "areYouSure": "Tem certeza que quer executar esta ação?",
   "confirm": "Confirmar",
   "cancel": "Cancelar",
   "service": "Serviço",
@@ -74,6 +74,7 @@
   "name": "Nome",
   "status": "Estado",
   "operation": "Operação",
+  "action": "Ação",
   "copyLink": "Copiar link",
   "copySuccess": "Copiado para a área de transferência",
   "killProcessConfirm": "Tem certeza que quer encerrar o processo selecionado?",
@@ -108,11 +109,13 @@
   "staticDelAlert": "Para garantir a segurança dos dados do usuário, a função de exclusão automática de software instalado não é mais fornecida. Se você tiver certeza de que quer excluir, clique em OK e apague o software manualmente na pasta que se abrir.",
   "placeholderSearch": "Pesquisar",
   "projects": "Projetos",
-  "areYouSure": "Tem certeza que quer executar esta ação?",
-  "action": "Ação",
-
+  "cleanup": "Limpeza",
   "preview": "Pré-visualização",
   "executing": "Em execução",
   "info": "Informações",
-  "ForceDelete": "Exclusão forçada"
+  "ForceDelete": "Exclusão forçada",
+  "needInstallHelperTips": "Algumas operações falharam porque os privilégios de administrador são necessários. Isso inclui modificar o arquivo de host, acessando a lista de processos, vinculando as portas abaixo de 1024, ou gerenciar variáveis de ambiente do sistema. Por favor, instale o Auxiliar FlyEnv para conceder as permissões necessárias para essas tarefas. Clique em \"OK\" para prosseguir com a instalação.",
+  "targetPlatforms": "Target Platforms",
+  "baseInfo": "Informações básicas",
+  "selectVersion": "Selecionar versão"
 }

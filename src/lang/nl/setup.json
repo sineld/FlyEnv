@@ -6,7 +6,6 @@
   "ustc": "Universiteit van Wetenschap en Technologie van China download bron",
   "Licenses": "Licentie",
   "requestedTips": "De licentieaanvraag is verstuurd, wacht alstublieft geduld en wacht op het wijzigen van de informatie, kunt u het opnieuw verzenden",
-  "licenseActivated": "Licentie geactiveerd",
   "autoStartService": "Automatisch diensten starten",
   "autoStartServiceTips": "Automatisch diensten starten bij opstarten van de applicatie",
   "autoHide": "Start verborgen / geminimaliseerd naar systeemvak",
@@ -45,5 +44,10 @@
   },
   "flyenvHelper": "Herstel FlyEnv Helper",
   "flyenvHelperBtn": "Repareer",
-  "flyenvHelperFixSuccess": "FlyEnv Helper succesvol opgelost"
+  "flyenvHelperFixSuccess": "FlyEnv Helper succesvol opgelost",
+  "flyenvHelperInstallFailTips": "De installatie van FlyEnv helper is mislukt. Probeer FlyEnv uit te voeren met beheerdersrechten, of klik op de knop OK en voer het hulpprogramma flyenv-helper.exe handmatig uit in de geopende map.",
+  "appFont": "Interfacelettertype",
+  "appFontTips": "Stel het lettertype in dat wordt gebruikt voor de applicatie-interface. Laat leeg om het standaard systeemlettertype te gebruiken",
+  "codeFont": "Codelettertype",
+  "codeFontTips": "Stel het lettertype in dat wordt gebruikt voor terminal, editor en andere codegebieden. Laat leeg om het standaard monospace-lettertype te gebruiken"
 }

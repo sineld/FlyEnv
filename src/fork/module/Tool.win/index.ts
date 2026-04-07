@@ -18,7 +18,8 @@ import {
   remove,
   writeFile,
   zipUnpack,
-  execPromiseWithEnv
+  execPromiseWithEnv,
+  removeByRoot
 } from '../../Fn'
 import { ForkPromise } from '@shared/ForkPromise'
 import { TaskQueue, TaskQueueProgress } from '@shared/TaskQueue'
@@ -27,8 +28,13 @@ import { EOL } from 'os'
 import type { SoftInstalled } from '@shared/app'
 import type { AppServiceAliasItem } from '@shared/app'
 import { BomCleanTask } from '../../util/BomCleanTask'
-import { ProcessListSearch, ProcessPidList, ProcessPidListByPids } from '@shared/Process.win'
-import { PItem, ProcessListByPid } from '@shared/Process'
+import {
+  fetchProcessPidByPort,
+  ProcessListSearch,
+  ProcessPidList,
+  ProcessPidListByPids
+} from '@shared/Process.win'
+import { PItem, ProcessKill, ProcessListByPid } from '@shared/Process'
 import RequestTimer from '@shared/requestTimer'
 import Helper from '../../Helper'
 
@@ -198,7 +204,7 @@ subjectAltName=@alt_names
   killPids(sig: string, pids: Array<string>) {
     return new ForkPromise(async (resolve) => {
       try {
-        await Helper.send('tools', 'kill', '-INT', pids)
+        await ProcessKill('-INT', pids)
       } catch {}
       resolve(true)
     })
@@ -208,7 +214,7 @@ subjectAltName=@alt_names
     return new ForkPromise(async (resolve) => {
       let pids: string[] = []
       try {
-        pids = (await Helper.send('tools', 'getPortPidsWin', name)) as any
+        pids = await fetchProcessPidByPort(name)
       } catch {}
       pids = Array.from(new Set(pids))
       pids = pids
@@ -219,12 +225,17 @@ subjectAltName=@alt_names
       if (pids.length === 0) {
         return resolve([])
       }
-      const arr: any[] = []
+      const arr: PItem[] = []
       console.log('pids: ', pids)
       const all = await ProcessPidList()
       for (const pid of pids) {
         const item = ProcessListByPid(pid, all)
-        arr.push(...item)
+        for (const p of item) {
+          const find = arr.find((s: PItem) => s.PID === p.PID)
+          if (!find) {
+            arr.push(p)
+          }
+        }
       }
       resolve(arr)
     })
@@ -236,7 +247,7 @@ subjectAltName=@alt_names
       for (const port of ports) {
         let portList: string[] = []
         try {
-          portList = (await Helper.send('tools', 'getPortPidsWin', port)) as any
+          portList = await fetchProcessPidByPort(port)
         } catch {
           portList = []
         }
@@ -253,7 +264,7 @@ subjectAltName=@alt_names
         return resolve(true)
       }
       try {
-        await Helper.send('tools', 'kill', '-INT', all)
+        await ProcessKill('-INT', all)
       } catch {}
       resolve(true)
     })
@@ -289,7 +300,7 @@ subjectAltName=@alt_names
     return new ForkPromise(async (resolve, reject) => {
       let oldPath: string[] = []
       try {
-        oldPath = await fetchRawPATH()
+        oldPath = await fetchRawPATH(true)
       } catch {}
       if (oldPath.length === 0) {
         reject(new Error('Fail'))
@@ -300,19 +311,9 @@ subjectAltName=@alt_names
 
       const envDir = join(dirname(global.Server.AppDir!), 'env')
       const flagDir = join(envDir, typeFlag)
-      let hasError = false
       try {
-        await remove(flagDir)
-      } catch {
-        hasError = true
-      }
-      if (hasError) {
-        try {
-          await Helper.send('tools', 'rm', flagDir)
-        } catch (e) {
-          console.log('rmdir err: ', e)
-        }
-      }
+        await removeByRoot(flagDir)
+      } catch {}
       console.log('removePATH flagDir: ', flagDir)
 
       oldPath = oldPath.filter((p) => {
@@ -376,7 +377,7 @@ subjectAltName=@alt_names
       let oldPath: string[] = []
       let rawOldPath: string[] = []
       try {
-        oldPath = await fetchRawPATH()
+        oldPath = await fetchRawPATH(true)
         rawOldPath = oldPath.map((s) => {
           if (existsSync(s)) {
             return realpathSync(s)
@@ -403,19 +404,9 @@ subjectAltName=@alt_names
       }
       const flagDir = join(envDir, typeFlag)
       console.log('flagDir: ', flagDir)
-      let hasError = false
       try {
-        await remove(flagDir)
-      } catch {
-        hasError = true
-      }
-      if (hasError) {
-        try {
-          await Helper.send('tools', 'rm', flagDir)
-        } catch (e) {
-          console.log('rmdir err: ', e)
-        }
-      }
+        await removeByRoot(flagDir)
+      } catch {}
 
       if (!rawOldPath.includes(binDir)) {
         try {
@@ -519,6 +510,14 @@ subjectAltName=@alt_names
 php "%~dp0composer.phar" %*`
           )
         }
+        const file = join(binDir, 'composer')
+        if (!existsSync(file)) {
+          await writeFile(
+            file,
+            `#!/usr/bin/env bash
+exec php "$(dirname "\${BASH_SOURCE[0]}")/composer.phar" "$@"`
+          )
+        }
         let composer_bin_dir = ''
         try {
           const d = await execPromise(`echo %COMPOSER_HOME%\\Composer`)
@@ -584,17 +583,9 @@ php "%~dp0composer.phar" %*`
   }
 
   private async removeFixed(dir: string) {
-    let hasError = false
     try {
-      await remove(dir)
-    } catch {
-      hasError = true
-    }
-    if (hasError) {
-      try {
-        await Helper.send('tools', 'rm', dir)
-      } catch {}
-    }
+      await removeByRoot(dir)
+    } catch {}
   }
 
   setAlias(
@@ -697,7 +688,7 @@ chcp 65001>nul
       console.log('envPathList !!!!!')
       let oldPath: string[] = []
       try {
-        oldPath = await fetchRawPATH()
+        oldPath = await fetchRawPATH(true)
       } catch {}
       if (oldPath.length === 0) {
         reject(new Error('Fail'))

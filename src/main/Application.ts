@@ -1,11 +1,10 @@
 import { EventEmitter } from 'events'
-import { app, BrowserWindow, globalShortcut, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, session, shell } from 'electron'
 import is from 'electron-is'
 import ConfigManager from './core/ConfigManager'
 import WindowManager from './ui/WindowManager'
 import MenuManager from './ui/MenuManager'
-import UpdateManager from './core/UpdateManager'
-import { existsSync, writeFileSync } from 'fs'
+import { existsSync } from 'fs'
 import TrayManager from './ui/TrayManager'
 import {
   getLanguage,
@@ -15,14 +14,14 @@ import {
   mkdirp,
   readFile,
   readFileFixed,
-  writeFile
+  writeFile,
+  writeFileByRoot
 } from './utils'
 import { AppAllLang, AppI18n, I18nT } from '@lang/index'
-import type { PtyItem } from './type'
 import SiteSuckerManager from './ui/SiteSucker'
 import { ForkManager } from './core/ForkManager'
 import { execPromiseSudo, spawnPromiseWithEnv } from '@shared/child-process'
-import { arch, userInfo } from 'node:os'
+import { arch, userInfo, tmpdir } from 'node:os'
 import NodePTY from './core/NodePTY'
 import HttpServer from './core/HttpServer'
 import AppHelper from './core/AppHelper'
@@ -39,6 +38,8 @@ import { AppHelperCheck, AppHelperRoleFix } from '@shared/AppHelperCheck'
 import Helper from '../fork/Helper'
 import { Capturer } from './core/Capturer'
 import OAuth from './core/OAuth'
+import { appendFile } from '@shared/fs-extra'
+import path from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -50,9 +51,7 @@ export default class Application extends EventEmitter {
   windowManager: WindowManager
   mainWindow?: BrowserWindow
   trayWindow?: BrowserWindow
-  updateManager?: UpdateManager
   forkManager?: ForkManager
-  pty: Partial<Record<string, PtyItem>> = {}
   customerLang: Record<string, any> = {}
   capturer?: Capturer
 
@@ -61,7 +60,8 @@ export default class Application extends EventEmitter {
     AppNodeFnManager.customerLang = this.customerLang
     AppNodeFnManager.nativeTheme_watch()
     global.Server = {
-      Local: getLocale()
+      Local: getLocale(),
+      APPVersion: app.getVersion()
     } as any
     this.isReady = false
     this.configManager = new ConfigManager()
@@ -77,9 +77,9 @@ export default class Application extends EventEmitter {
     ScreenManager.initWatch()
     this.trayManager = new TrayManager()
     this.windowManager.trayManager = this.trayManager
-    this.initUpdaterManager()
     this.handleCommands()
     this.handleIpcMessages()
+    this.initFontAccessPermission()
     this.initAppHelper()
     this.initForkManager()
     SiteSuckerManager.setCallback((link: any) => {
@@ -175,7 +175,7 @@ export default class Application extends EventEmitter {
     this.forkManager = new ForkManager(resolve(__dirname, './fork.mjs'))
     this.forkManager.on(({ key, info }: { key: string; info: any }) => {
       if (key === 'App-Need-Init-FlyEnv-Helper') {
-        AppHelper.initHelper().catch()
+        AppHelper.needInstall()
         return
       }
       this.windowManager.sendCommandTo(this.mainWindow!, key, key, info)
@@ -340,6 +340,16 @@ export default class Application extends EventEmitter {
         })
     }
 
+    // SDKMAN detection (macOS + Linux)
+    const checkSdkman = () => {
+      const uinfo = userInfo()
+      const sdkmanInit = join(uinfo.homedir, '.sdkman/bin/sdkman-init.sh')
+      if (existsSync(sdkmanInit)) {
+        global.Server.SdkmanHome = join(uinfo.homedir, '.sdkman')
+        sendGlobalUpdate()
+      }
+    }
+
     if (isMacOS()) {
       const brewBin = isArmArch() ? '/opt/homebrew/bin/brew' : '/usr/local/Homebrew/bin/brew'
       runBrewChecks([brewBin])
@@ -352,6 +362,8 @@ export default class Application extends EventEmitter {
         .catch((e: Error) => {
           console.log('which port e: ', e)
         })
+
+      checkSdkman()
     } else if (isLinux()) {
       /**
        * Linux homebrew check
@@ -362,6 +374,8 @@ export default class Application extends EventEmitter {
         '/home/linuxbrew/.linuxbrew/bin/brew'
       ]
       runBrewChecks(brewBins)
+
+      checkSdkman()
     }
   }
 
@@ -403,14 +417,52 @@ export default class Application extends EventEmitter {
   }
 
   initServerDir() {
-    console.log('userData: ', app.getPath('userData'))
     let runpath = ''
     if (isMacOS()) {
-      runpath = app.getPath('userData').replace('Application Support/', '')
+      const userData = app.getPath('userData')
+      console.log('userData: ', userData)
+      const oldPath = resolve(userData, '../../PhpWebStudy')
+      const newPath = resolve(userData, '../../FlyEnv')
+      if (existsSync(oldPath) && oldPath.includes('PhpWebStudy')) {
+        runpath = oldPath
+      } else {
+        runpath = newPath
+      }
     } else if (isWindows()) {
-      runpath = resolve(app.getPath('exe'), '../../PhpWebStudy-Data').split('\\').join('/')
       if (is.dev()) {
         runpath = resolve(__static, '../../../data')
+      } else {
+        if (process.env?.PORTABLE_EXECUTABLE_DIR) {
+          const oldPath = path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'PhpWebStudy-Data')
+          const newPath = path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'FlyEnv-Data')
+          if (existsSync(oldPath)) {
+            runpath = oldPath
+          } else {
+            runpath = newPath
+          }
+        } else {
+          const exePath = app.getPath('exe')
+          const oldPath = resolve(exePath, '../../PhpWebStudy-Data').split('\\').join('/')
+          const oldPath1 = resolve(oldPath, '../../PhpWebStudy-Data').split('\\').join('/')
+          const newPath = resolve(exePath, '../../FlyEnv-Data').split('\\').join('/')
+          const debugLog = JSON.stringify(
+            {
+              oldPath,
+              oldPath1,
+              newPath
+            },
+            null,
+            2
+          )
+          appendFile(join(tmpdir(), 'flyenv-debug.log'), `[initServerDir]: ${debugLog}\n`).catch()
+          if (existsSync(oldPath) && oldPath.includes('PhpWebStudy-Data')) {
+            runpath = oldPath
+          } else if (existsSync(oldPath1) && oldPath1.includes('PhpWebStudy-Data')) {
+            runpath = oldPath1
+          } else {
+            runpath = newPath
+          }
+        }
       }
     } else {
       runpath = resolve(app.getPath('userData'), '../FlyEnv')
@@ -531,7 +583,7 @@ export default class Application extends EventEmitter {
   }
 
   async stop() {
-    logger.info('[PhpWebStudy] application stop !!!')
+    logger.info('[FlyEnv] application stop !!!')
     try {
       globalShortcut.unregisterAll()
       ScreenManager.destroy()
@@ -565,7 +617,7 @@ export default class Application extends EventEmitter {
       const x = hosts.match(/(#X-HOSTS-BEGIN#)([\s\S]*?)(#X-HOSTS-END#)/g)
       if (x && x.length > 0) {
         hosts = hosts.replace(x[0], '')
-        writeFileSync(file, hosts)
+        await writeFileByRoot(file, hosts)
       }
     } catch {}
   }
@@ -591,16 +643,6 @@ export default class Application extends EventEmitter {
     this.windowManager.getWindowList().forEach((window) => {
       this.windowManager.sendMessageTo(window, channel, ...args)
     })
-  }
-
-  initUpdaterManager() {
-    try {
-      const autoCheck = this.configManager.getConfig('setup.autoCheck') ?? true
-      this.updateManager = new UpdateManager(autoCheck)
-      this.handleUpdaterEvents()
-    } catch (err) {
-      console.log('initUpdaterManager err: ', err)
-    }
   }
 
   relaunch() {
@@ -665,10 +707,6 @@ export default class Application extends EventEmitter {
 
     this.on('application:window-open-new', (page) => {
       console.log('application:window-open-new: ', page)
-    })
-
-    this.on('application:check-for-updates', () => {
-      this.updateManager?.check()
     })
   }
 
@@ -801,6 +839,13 @@ export default class Application extends EventEmitter {
     }
 
     switch (command) {
+      case 'APP-FlyEnv-Helper-Install':
+        AppHelper.initHelper()
+          .catch()
+          .finally(() => {
+            this.windowManager.sendCommandTo(this.mainWindow!, command, key, true)
+          })
+        break
       case 'APP:FlyEnv-Helper-Command':
         AppHelper.command().then((res) => {
           this.windowManager.sendCommandTo(this.mainWindow!, command, key, res)
@@ -838,7 +883,7 @@ export default class Application extends EventEmitter {
       case 'app:password-check':
         {
           const pass = args?.[0] ?? ''
-          execPromiseSudo([`-k`, 'echo', 'PhpWebStudy'], undefined, pass)
+          execPromiseSudo([`-k`, 'echo', 'FlyEnv'], undefined, pass)
             .then(() => {
               this.configManager.setConfig('password', pass)
               global.Server.Password = pass
@@ -889,8 +934,12 @@ export default class Application extends EventEmitter {
         this.windowManager?.getFocusedWindow()?.close()
         break
       case 'application:open-dev-window':
-        this.mainWindow?.webContents?.openDevTools()
-        this.windowManager.sendCommandTo(this.mainWindow!, command, key, true)
+        {
+          this.mainWindow?.webContents?.openDevTools()
+          const debugFile = join(tmpdir(), 'flyenv-debug.log')
+          shell.showItemInFolder(debugFile)
+          this.windowManager.sendCommandTo(this.mainWindow!, command, key, true)
+        }
         break
       case 'application:about':
         this.windowManager.sendCommandTo(this.mainWindow!, command, key)
@@ -1079,32 +1128,19 @@ export default class Application extends EventEmitter {
     })
   }
 
-  handleUpdaterEvents() {
-    this.updateManager?.on('checking', () => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', false)
+  initFontAccessPermission() {
+    session.defaultSession.setPermissionCheckHandler((webContents, permission: any) => {
+      if (permission === 'local-fonts') {
+        return true
+      }
+      return true
     })
-
-    this.updateManager?.on('download-progress', (event) => {
-      const win = this.windowManager.getWindow('index')
-      win.setProgressBar(event.percent / 100)
-    })
-
-    this.updateManager?.on('update-not-available', () => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
-    })
-
-    this.updateManager?.on('update-downloaded', () => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
-      const win = this.windowManager.getWindow('index')
-      win.setProgressBar(0)
-    })
-
-    this.updateManager?.on('will-updated', () => {
-      this.windowManager.setWillQuit(true)
-    })
-
-    this.updateManager?.on('update-error', () => {
-      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
+    session.defaultSession.setPermissionRequestHandler((webContents, permission: any, callback) => {
+      if (permission === 'local-fonts') {
+        callback(true)
+        return
+      }
+      callback(true)
     })
   }
 }

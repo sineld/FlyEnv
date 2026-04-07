@@ -53,6 +53,13 @@ class BaseManager {
   Image: any
   Zig: any
   Qdrant: any
+  CloudflareTunnel: any
+  Cloudflared: any
+  OpenClaw: any
+  N8N: any
+  RustFS: any
+  Sdkman: any
+  LanguageProject: any
 
   modules: Set<string> = new Set()
 
@@ -215,6 +222,12 @@ class BaseManager {
         this.MacPorts = res.default
       }
       doRun(this.MacPorts)
+    } else if (module === 'sdkman') {
+      if (!this.Sdkman) {
+        const res = await import('./module/Sdkman')
+        this.Sdkman = res.default
+      }
+      doRun(this.Sdkman)
     } else if (module === 'caddy') {
       if (!this.Caddy) {
         const res = await import('./module/Caddy')
@@ -427,6 +440,42 @@ class BaseManager {
         this.Qdrant = res.default
       }
       doRun(this.Qdrant)
+    } else if (module === 'cloudflare-tunnel') {
+      if (!this.CloudflareTunnel) {
+        const res = await import('./module/CloudflareTunnel')
+        this.CloudflareTunnel = res.default
+      }
+      doRun(this.CloudflareTunnel)
+    } else if (module === 'cloudflared') {
+      if (!this.Cloudflared) {
+        const res = await import('./module/Cloudflared')
+        this.Cloudflared = res.default
+      }
+      doRun(this.Cloudflared)
+    } else if (module === 'openclaw') {
+      if (!this.OpenClaw) {
+        const res = await import('./module/OpenClaw')
+        this.OpenClaw = res.default
+      }
+      doRun(this.OpenClaw)
+    } else if (module === 'n8n') {
+      if (!this.N8N) {
+        const res = await import('./module/N8N')
+        this.N8N = res.default
+      }
+      doRun(this.N8N)
+    } else if (module === 'rustfs') {
+      if (!this.RustFS) {
+        const res = await import('./module/RustFS')
+        this.RustFS = res.default
+      }
+      doRun(this.RustFS)
+    } else if (module === 'language-project') {
+      if (!this.LanguageProject) {
+        const res = await import('./module/LanguageProject')
+        this.LanguageProject = res.default
+      }
+      doRun(this.LanguageProject)
     } else {
       ProcessSendError(ipcCommandKey, 'No Found Module')
     }

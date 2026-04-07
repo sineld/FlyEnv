@@ -4,7 +4,7 @@ import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { existsSync } from 'node:fs'
 import { isLinux, isWindows } from "../src/shared/utils";
-
+import type { PackContext } from 'app-builder-lib'
 
 const { mkdirp, copyFile } = _fs
 const execPromise = promisify(exec)
@@ -14,7 +14,7 @@ const execPromise = promisify(exec)
  * @param {Object} pack - Pack object containing build information
  * @returns {Promise<boolean>}
  */
-export default async function after(pack) {
+export default async function after(pack: PackContext) {
   if (isLinux()) {
     console.log('Linux pack: ', pack)
     /**
@@ -42,7 +42,7 @@ export default async function after(pack) {
     }
 
     let shFile = join(pack.appOutDir, 'resources/helper/flyenv.sh')
-    let tmplFile = resolve(pack.appOutDir, '../../static/sh/macOS/fly-env.sh')
+    let tmplFile = resolve(pack.appOutDir, '../../static/sh/Linux/fly-env.sh')
     await copyFile(tmplFile, shFile)
 
     shFile = join(pack.appOutDir, 'resources/helper/flyenv-helper-init.sh')

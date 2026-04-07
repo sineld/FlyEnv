@@ -40,7 +40,7 @@
   "cleanSelect": "Seçimi Temizle",
   "cleanAll": "Tümünü Temizle",
   "brewSrcSwitch": "Brew Kaynak Değiştirici",
-    "useProxy": "Proxy Kullan",
+  "useProxy": "Proxy Kullan",
   "proxySetting": "Sunucu Proxy Ayarları",
   "quickSetup": "Hızlı Kurulum",
   "currentProxy": "Mevcut Proxy",
@@ -113,5 +113,9 @@
   "preview": "Önizleme",
   "executing": "Yürütülüyor",
   "info": "Bilgi",
-  "ForceDelete": "Zorla sil"
+  "ForceDelete": "Zorla sil",
+  "needInstallHelperTips": "Yönetici ayrıcalıkları gerektiğinden bazı işlemler başarısız oldu. Buna Hosts dosyasını değiştirme, işlem listesine erişme, 1024'ün altındaki bağlantı noktalarına bağlanma veya sistem ortam değişkenlerini yönetme dahildir. Bu görevler için gerekli izinleri vermek üzere FlyEnv Helper'ı yükleyin. Yüklemeye devam etmek için \"Tamam\"ı tıklayın.",
+  "targetPlatforms": "Target Platforms",
+  "baseInfo": "Temel Bilgi",
+  "selectVersion": "Sürüm Seç"
 }

@@ -10,14 +10,14 @@ import {
   writeFile,
   remove,
   mkdirp,
-  zipUnpack
+  zipUnpack,
+  chmod
 } from '../../Fn'
 import { ForkPromise } from '@shared/ForkPromise'
 import axios from 'axios'
 import * as http from 'http'
 import * as https from 'https'
-import { type PItem, ProcessSearch } from '@shared/Process'
-import Helper from '../../Helper'
+import { type PItem, ProcessKill, ProcessListFetch, ProcessSearch } from '@shared/Process'
 import { isLinux, isMacOS, isWindows } from '@shared/utils'
 import { unpack } from '../../util/Zip'
 import { ProcessPidList } from '@shared/Process.win'
@@ -98,19 +98,25 @@ export class Base {
       try {
         this._linkVersion(version)
       } catch {}
+      let res: any
       try {
         await this._stopServer(version, ...args).on(on)
-        const res = await this._startServer(version, ...args).on(on)
+        res = await this._startServer(version, ...args).on(on)
+        resolve(res)
+      } catch (e) {
+        console.error('startService error: ', e)
+        return reject(e)
+      }
+
+      try {
         if (res?.['APP-Service-Start-PID']) {
           const pid = res['APP-Service-Start-PID']
           const appPidFile = join(global.Server.BaseDir!, `pid/${this.type}.pid`)
           await mkdirp(dirname(appPidFile))
           await writeFile(appPidFile, pid.trim())
+          await chmod(appPidFile, '0755')
         }
-        resolve(res)
-      } catch (e) {
-        reject(e)
-      }
+      } catch {}
     })
   }
 
@@ -123,22 +129,30 @@ export class Base {
       })
       let plist: PItem[] = []
       const allPid: string[] = []
-
-      if (isWindows()) {
-        plist = await ProcessPidList()
-      } else {
-        plist = (await Helper.send('tools', 'processList')) as any
+      try {
+        if (isWindows()) {
+          plist = await ProcessPidList()
+        } else {
+          plist = await ProcessListFetch()
+        }
+      } catch (e) {
+        on({
+          'APP-On-Log': AppLog('info', I18nT('appLog.processListFail'))
+        })
+        reject(e)
       }
       on({
         'APP-Service-Stop-Success': true
       })
       const appPidFile = join(global.Server.BaseDir!, `pid/${this.type}.pid`)
-      if (existsSync(appPidFile)) {
-        const pid = (await readFile(appPidFile, 'utf-8')).trim()
-        allPid.push(pid)
-        const list = ProcessSearch(pid, false, plist).map((p) => p.PID)
-        allPid.push(...list)
-      }
+      try {
+        if (existsSync(appPidFile)) {
+          const pid = (await readFile(appPidFile, 'utf-8')).trim()
+          allPid.push(pid)
+          const list = ProcessSearch(pid, false, plist).map((p) => p.PID)
+          allPid.push(...list)
+        }
+      } catch {}
       if (version?.pid) {
         allPid.push(version.pid)
         const list = ProcessSearch(version.pid, false, plist).map((p) => p.PID)
@@ -163,7 +177,10 @@ export class Base {
       if (serverName) {
         if (isWindows()) {
           const all = ProcessSearch(serverName, false, plist)
-            .filter((item) => item.COMMAND.includes('PhpWebStudy-Data'))
+            .filter(
+              (item) =>
+                item.COMMAND.includes('PhpWebStudy-Data') || item.COMMAND.includes('FlyEnv-Data')
+            )
             .map((m) => `${m.PID}`)
           allPid.push(...all)
         } else {
@@ -193,7 +210,7 @@ export class Base {
       if (isWindows()) {
         if (arr.length > 0) {
           try {
-            await Helper.send('tools', 'kill', '-INT', arr)
+            await ProcessKill('-INT', arr)
           } catch {}
         }
       } else {
@@ -214,13 +231,15 @@ export class Base {
               break
           }
           try {
-            await Helper.send('tools', 'kill', sig, arr)
+            await ProcessKill(sig, arr)
           } catch {}
         }
       }
-      if (existsSync(appPidFile)) {
-        await remove(appPidFile)
-      }
+      try {
+        if (existsSync(appPidFile)) {
+          await remove(appPidFile)
+        }
+      } catch {}
       on({
         'APP-On-Log': AppLog('info', I18nT('appLog.stopServiceEnd', { service: this.type }))
       })

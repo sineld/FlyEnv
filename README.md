@@ -34,6 +34,7 @@ Most dev tools are either too heavy (Docker Desktop) or too limited (NVM/Homebre
 | **Setup Time** | **⚡️ < 1 Minute** | ⏳ Slow Builds | ⏳ Manual Config |
 
 ### Core Benefits
+
 * **💎 Not Bloated:** FlyEnv is **modular**. It only installs the runtimes you explicitly need. Don't use Java? It won't touch your disk.
 * **⚡ Native Speed:** Runs Nginx, PHP, and MySQL as static binaries. No containers means faster I/O and instant startup.
 * **🛡️ Project Isolation:** Automatically switches Node/PHP versions when you `cd` into a project directory.
@@ -47,19 +48,23 @@ Most dev tools are either too heavy (Docker Desktop) or too limited (NVM/Homebre
 <summary><strong>🐘 For PHP & Laravel Developers</strong></summary>
 
 > The best **Windows alternative to Laravel Herd**.
+
 > * Switch between PHP 5.6, 7.4, 8.x instantly.
 > * Run Nginx/Apache, MySQL, Redis, and Mailpit out of the box.
 > * Native `composer` performance (no file-sharing lag).
-> * **[Download for Windows](#Windows)**
+> * **[Download for Windows](#windows-recommended)**
+
 </details>
 
 <details>
 <summary><strong>🟢 For Node.js & Frontend Developers</strong></summary>
 
 > Stop fighting with NVM.
+
 > * Define Node versions per project (automatically detects `package.json`).
 > * Instant access to Elasticsearch, PostgreSQL, or RabbitMQ without `docker-compose`.
 > * Supports Bun, Deno, and PM2 management.
+
 </details>
 
 <details>
@@ -67,6 +72,7 @@ Most dev tools are either too heavy (Docker Desktop) or too limited (NVM/Homebre
 
 > * Manage multiple JDKs (Maven/Gradle included) and Python environments effortlessly.
 > * Keep your global system PATH clean and organized.
+
 </details>
 
 ---
@@ -75,15 +81,16 @@ Most dev tools are either too heavy (Docker Desktop) or too limited (NVM/Homebre
 
 FlyEnv allows you to install **only what you need** from a vast library of supported software:
 
-* **AI Integration**: Ollama, DeepSeek, Chatbox.
+* **AI Integration**: OpenClaw, n8n, Ollama, kimi2.5, Chatbox
 * **Containers**: Podman.
+* **Network Tunnel**: Cloudflared, Cloudflare Tunnel.
 * **Web Servers**: Apache, Nginx, Caddy, Tomcat, Consul.
 * **Databases**: MySQL, MariaDB, PostgreSQL, MongoDB, Qdrant.
 * **Email Server**: Mailpit.
-* **Programming Languages**: PHP (Composer), Java (Maven, Gradle), Node.js, Python, Go, Erlang, Ruby, Rust (Rustup), Bun, Deno, Zig.
+* **Programming Languages**: PHP (Composer), Java (Maven, Gradle, SDKMAN), Node.js, Python, Go, Erlang, Ruby, Rust (Rustup), Bun, Deno, Zig.
 * **Data Queue & Cache**: Redis, Memcached, RabbitMQ, etcd.
 * **Search Engine**: Elasticsearch, Meilisearch, Typesense
-* **Object Storage**: Minio.
+* **Object Storage**: RustFS, Minio.
 * **Utilities**: DNS Server, FTP Server, Static HTTP Server.
 * **Custom modules**: Users can add modules on their own, whether as services or commonly used commands. FlyEnv's custom module system ensures that user modules function just like system modules, delivering a seamless user experience.
 
@@ -91,31 +98,59 @@ FlyEnv allows you to install **only what you need** from a vast library of suppo
 
 ---
 
-## 📥 Installation
+## 🛠 Developer-Friendly Tools
 
-### Windows (Recommended)
-Finally, a fast, native environment for Windows developers.
+* **Local Domains & SSL:** Create local sites (`myapp.test`) with custom domains and **one-click HTTPS**.
+* **Config & Logs:** Edit `php.ini` or `my.cnf` directly in FlyEnv. View real-time error logs with highlighting.
+* **Port Management:** Visualize which apps are using which ports and kill processes instantly.
 
-* **Installer:** [FlyEnv-Setup-4.13.0.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-Setup-4.13.0.exe)
-* **Portable:** [FlyEnv-Portable-4.13.0.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-Portable-4.13.0.exe)
+[Watch Video Demo](https://flyenv.com/#tools-modules)
 
-### macOS
-* **Homebrew:** `brew install flyenv`
-* **DMG (Intel):** [FlyEnv-4.13.0.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-4.13.0.dmg)
-* **DMG (Apple Silicon):** [FlyEnv-4.13.0-arm64.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-4.13.0-arm64.dmg)
-
-### Linux
-Supports Debian/Ubuntu (.deb) and RedHat/CentOS (.rpm).
-#### Debian / Ubuntu
-- **x86_64**: [FlyEnv-4.13.0-x64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-4.13.0-x64.deb)
-- **ARM64**: [FlyEnv-4.13.0-arm64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-4.13.0-arm64.deb)
-
-#### Red Hat / Fedora / SUSE / CentOS
-- **x86_64**: [FlyEnv-4.13.0-x64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-4.13.0-x64.rpm)
-- **ARM64**: [FlyEnv-4.13.0-arm64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.13.0/FlyEnv-4.13.0-arm64.rpm)
+![screen3.jpeg](./screen3.jpeg)
 
 ---
 
+## 📥 Installation
+
+### Windows (Recommended)
+
+Finally, a fast, native environment for Windows developers.
+
+* **Installer:** [FlyEnv-Setup-4.14.0.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-Setup-4.14.0.exe)
+* **Portable:** [FlyEnv-Portable-4.14.0.exe](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-Portable-4.14.0.exe)
+
+### macOS
+
+* **Homebrew:** `brew install flyenv`
+* **DMG (Intel):** [FlyEnv-4.14.0.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-4.14.0.dmg)
+* **DMG (Apple Silicon):** [FlyEnv-4.14.0-arm64.dmg](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-4.14.0-arm64.dmg)
+
+### Linux
+
+Supports Debian/Ubuntu (.deb) and RedHat/CentOS (.rpm).
+
+#### Debian / Ubuntu
+
+- **x86_64**: [FlyEnv-4.14.0-x64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-4.14.0-x64.deb)
+- **ARM64**: [FlyEnv-4.14.0-arm64.deb](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-4.14.0-arm64.deb)
+
+#### Red Hat / Fedora / SUSE / CentOS
+
+- **x86_64**: [FlyEnv-4.14.0-x64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-4.14.0-x64.rpm)
+- **ARM64**: [FlyEnv-4.14.0-arm64.rpm](https://github.com/xpf0000/FlyEnv/releases/download/v4.14.0/FlyEnv-4.14.0-arm64.rpm)
+
+---
+
+**📦 Build & Transparency**
+
+All FlyEnv installation packages are now built using **[GitHub Actions](https://github.com/xpf0000/FlyEnv/actions)**. You can verify the build process and download the artifacts directly from the following links:
+
+* **Global Build History:** [GitHub Actions](https://github.com/xpf0000/FlyEnv/actions)
+* **Windows Build:** [[Run #21811918057](https://github.com/xpf0000/FlyEnv/actions/runs/21811918057)](https://github.com/xpf0000/FlyEnv/actions/runs/21811918057)
+* **macOS Build:** [[Run #21799936855](https://github.com/xpf0000/FlyEnv/actions/runs/21799936855)](https://github.com/xpf0000/FlyEnv/actions/runs/21799936855)
+* **Linux Build:** [[Run #21799936847](https://github.com/xpf0000/FlyEnv/actions/runs/21799936847)](https://github.com/xpf0000/FlyEnv/actions/runs/21799936847)
+
+---
 
 ## 📸 Interface Preview
 
@@ -140,15 +175,6 @@ Supports Debian/Ubuntu (.deb) and RedHat/CentOS (.rpm).
 
 ---
 
-## 🛠 Developer-Friendly Tools
-
-* **Local Domains & SSL:** Create local sites (`myapp.test`) with custom domains and **one-click HTTPS**.
-* **Config & Logs:** Edit `php.ini` or `my.cnf` directly in FlyEnv. View real-time error logs with highlighting.
-* **Port Management:** Visualize which apps are using which ports and kill processes instantly.
-
-![screen3.jpeg](./screen3.jpeg)
----
-
 ## Development & Contribution
 
 We welcome contributions! FlyEnv is built with Node.js & web technologies (Electron/Vue).
@@ -165,6 +191,7 @@ Check out our [Development Guide](./DEV.md) to get started.
 ## Community & Support
 
 * **Technical Deep Dive:** [Architecture Analysis](https://deepwiki.com/xpf0000/FlyEnv)
+* **Facebook Group:**[Facebook Group](https://www.facebook.com/groups/908637655411162)
 * **Discord:** [Join Community](https://discord.gg/u5SuMGxjPE)
 * **Discussions:** [GitHub Discussions](https://github.com/xpf0000/FlyEnv/discussions)
 * **Website:** [flyenv.com](https://www.flyenv.com)

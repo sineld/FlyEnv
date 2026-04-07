@@ -31,7 +31,7 @@ import TaskQueue from '../../TaskQueue'
 import Helper from '../../Helper'
 import { isWindows, pathFixedToUnix } from '@shared/utils'
 import { ProcessListSearch } from '@shared/Process.win'
-import type { PItem } from '@shared/Process'
+import { PItem, ProcessKill } from '@shared/Process'
 import { EOL } from 'os'
 import { createConnection } from 'mysql2/promise'
 import type { Connection } from 'mysql2/promise'
@@ -137,7 +137,7 @@ class Mysql extends Base {
 
         let success = false
         /**
-         * ./mysqladmin.exe --defaults-file="C:\Program Files\PhpWebStudy-Data\server\mysql\my-5.7.cnf" -v --connect-timeout=1 --shutdown-timeout=1 --protocol=tcp --host="127.0.0.1" -uroot -proot001 shutdown
+         * ./mysqladmin.exe --defaults-file="C:\Program Files\FlyEnv-Data\server\mysql\my-5.7.cnf" -v --connect-timeout=1 --shutdown-timeout=1 --protocol=tcp --host="127.0.0.1" -uroot -proot001 shutdown
          */
         const command = `"${bin}" --defaults-file="${m}" --connect-timeout=1 --shutdown-timeout=1 --protocol=tcp --host="127.0.0.1" --port=${port} -uroot -p${password} shutdown`
         console.log('mysql _stopServer command: ', command)
@@ -255,7 +255,8 @@ datadir=${pathFixedToUnix(dataDir)}`
                 execArgs,
                 execEnv,
                 on,
-                timeToWait: 1000
+                timeToWait: 1000,
+                maxTime: 60
               })
               resolve(res)
             } catch (e: any) {
@@ -417,20 +418,17 @@ datadir=${pathFixedToUnix(dataDir)}`
     return new ForkPromise(async (resolve, reject) => {
       const id = version?.id ?? ''
       if (isWindows()) {
-        const conf =
-          'PhpWebStudy-Data' +
-          join(global.Server.MysqlDir!, `group/my-group-${id}.cnf`).split('PhpWebStudy-Data').pop()
         const arr: Array<string> = []
         let all: PItem[] = []
         try {
-          all = await ProcessListSearch(conf, false)
+          all = await ProcessListSearch(`my-group-${id}.cnf`, false)
         } catch {}
 
         all.forEach((item) => arr.push(item.PID))
 
         if (arr.length > 0) {
           try {
-            await Helper.send('tools', 'kill', '-INT', arr)
+            await ProcessKill('-INT', arr)
           } catch {}
         }
         await waitTime(500)
@@ -438,7 +436,6 @@ datadir=${pathFixedToUnix(dataDir)}`
           'APP-Service-Stop-PID': arr
         })
       } else {
-        const conf = join(global.Server.MysqlDir!, `group/my-group-${id}.cnf`)
         const serverName = 'mysqld'
         const command = `ps aux | grep '${serverName}' | awk '{print $2,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20}'`
         console.log('_stopServer command: ', command)
@@ -447,13 +444,13 @@ datadir=${pathFixedToUnix(dataDir)}`
           const pids = res?.stdout?.trim()?.split('\n') ?? []
           const arr: Array<string> = []
           for (const p of pids) {
-            if (p.includes(conf)) {
+            if (p.includes(`my-group-${id}.cnf`)) {
               arr.push(p.split(' ')[0])
             }
           }
           if (arr.length > 0) {
             const sig = '-TERM'
-            await Helper.send('tools', 'kill', sig, arr)
+            await ProcessKill(sig, arr)
           }
           await waitTime(500)
           resolve(true)
@@ -525,7 +522,8 @@ sql-mode=NO_ENGINE_SUBSTITUTION`
                 execArgs,
                 execEnv,
                 on,
-                timeToWait: 1000
+                timeToWait: 1000,
+                maxTime: 60
               })
               resolve(res)
             } catch (e: any) {

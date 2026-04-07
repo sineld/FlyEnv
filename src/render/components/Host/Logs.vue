@@ -6,10 +6,14 @@
     :with-header="false"
     @closed="closedFn"
   >
-    <div class="flex flex-col overflow-hidden py-3 px-6 h-screen gap-4">
-      <XRadioGroup v-model="type" class="mt-2" :data="types" @button-click="initType" />
+    <div class="flex flex-col overflow-hidden h-screen gap-4">
+      <el-radio-group v-model="type" class="mt-4 px-3 flex-shrink-0">
+        <template v-for="(item, _index) in types" :key="_index">
+          <el-radio-button :value="item.value" :label="item.label"></el-radio-button>
+        </template>
+      </el-radio-group>
       <LogVM ref="log" :log-file="filepath" class="flex-1 overflow-hidden" />
-      <ToolVM :log="log" class="flex-shrink-0" />
+      <ToolVM :log="log" class="flex-shrink-0 px-3 pb-4" />
     </div>
   </el-drawer>
 </template>
@@ -20,7 +24,6 @@
   import { AsyncComponentSetup } from '@/util/AsyncComponent'
   import LogVM from '@/components/Log/index.vue'
   import ToolVM from '@/components/Log/tool.vue'
-  import XRadioGroup from '@/components/XRadioGroup/index.vue'
   import { join } from '@/util/path-browserify'
 
   const { show, onClosed, onSubmit, closedFn } = AsyncComponentSetup()
@@ -91,13 +94,17 @@
     type.value = t
     const logFile: { [key: string]: string } = logfile.value
     filepath.value = logFile[t] ?? ''
-    localStorage.setItem('PhpWebStudy-Host-Log-Type', t)
+    localStorage.setItem('FlyEnv-Host-Log-Type', t)
     await doRefresh()
   }
 
   init()
-  const saveType = localStorage.getItem('PhpWebStudy-Host-Log-Type') ?? 'nginx-access'
+  const saveType = localStorage.getItem('FlyEnv-Host-Log-Type') ?? 'nginx-access'
   initType(saveType)
+
+  watch(type, (v) => {
+    initType(v)
+  })
 
   defineExpose({
     show,

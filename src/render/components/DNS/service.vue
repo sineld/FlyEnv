@@ -2,11 +2,25 @@
   <div class="dns-panel main-right-panel">
     <div class="top-tab" :class="{ running: running }">
       <span class="title">DNS IP: </span>
-      <span class="ip"> {{ ip }}</span>
+      <template v-if="fixedIp">
+        <span class="ip"> {{ fixedIp }}</span>
+      </template>
+      <template v-else>
+        <el-select
+          v-if="ipList.length > 1"
+          v-model="selectedIp"
+          :style="ipSelectStyle"
+          class="w-[200px]"
+        >
+          <el-option v-for="item in ipList" :key="item.ip" :label="item.ip" :value="item.ip">
+          </el-option>
+        </el-select>
+        <span v-else class="ip"> {{ ip }}</span>
+      </template>
       <el-popover popper-class="dns-tips-popper" :show-after="800" width="auto">
         <template #default>
           <div>
-            {{ $t('host.dnsInfo', { ip: `@${ip}`, ipWin: ip }) }}
+            {{ $t('host.dnsInfo', { ip: `@${selectedIp || ip}`, ipWin: selectedIp || ip }) }}
           </div>
         </template>
         <template #reference>
@@ -66,13 +80,51 @@
   import { DnsStore } from './dns'
   import type { Column } from 'element-plus'
   import { I18nT } from '@lang/index'
+  import { asyncComputed } from '@vueuse/core'
+  import { join } from '@/util/path-browserify'
+  import { fs } from '@/util/NodeFn'
 
   const dnsStore = DnsStore()
   dnsStore.init()
   dnsStore.getIP()
 
+  const fixedIp = asyncComputed(async () => {
+    try {
+      const file = join(window.Server.BaseDir!, 'dns/dns.json')
+      const exists = await fs.existsSync(file)
+      if (!exists) {
+        return undefined
+      }
+      const content = await fs.readFile(file)
+      const json = JSON.parse(content)
+      const ip = json?.bind ?? ''
+      if (ip && ip !== '0.0.0.0') {
+        return ip
+      }
+      return undefined
+    } catch {
+      return undefined
+    }
+  })
+
   const ip = computed(() => {
     return dnsStore.ip
+  })
+  const ipList = computed(() => {
+    return dnsStore.ipList
+  })
+  const selectedIp = computed({
+    get: () => dnsStore.selectedIp,
+    set: (val: string) => dnsStore.setSelectedIp(val)
+  })
+  const ipSelectStyle = computed(() => {
+    if (running.value) {
+      return {
+        '--el-select-multiple-input-color': '#01cc74',
+        '--el-input-text-color': '#01cc74'
+      }
+    }
+    return null
   })
   const running = computed(() => {
     return dnsStore.running

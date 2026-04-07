@@ -1,18 +1,27 @@
 import JSON5 from 'json5'
 import type { PItem } from './Process'
 import Helper from '../fork/Helper'
-
-// export type PItem = {
-//   ProcessId: number
-//   ParentProcessId: number
-//   CommandLine: string
-//   children?: PItem[]
-// }
+import { AppHelperCheck } from '@shared/AppHelperCheck'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { appDebugLog, uuid } from '@shared/utils'
+import { execPromiseWithEnv } from '@shared/child-process'
+import { readFile, remove } from '@shared/fs-extra'
 
 export const ProcessPidList = async (): Promise<PItem[]> => {
-  console.log('ProcessPidList !!!')
-  const all: PItem[] = []
+  let useHelper = false
   try {
+    if (Helper.enable) {
+      useHelper = true
+    } else if (await AppHelperCheck()) {
+      useHelper = true
+    }
+  } catch {
+    useHelper = false
+  }
+  const all: PItem[] = []
+
+  if (useHelper) {
     const content: string = (await Helper.send('tools', 'processListWin')) as any
     const list = JSON5.parse(content)
     all.push(
@@ -24,15 +33,39 @@ export const ProcessPidList = async (): Promise<PItem[]> => {
         }
       })
     )
+    return all
+  }
+
+  try {
+    const file = join(tmpdir(), `${uuid()}.json`).split('\\').join('/')
+    const command = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;[Console]::InputEncoding = [System.Text.Encoding]::UTF8;Get-CimInstance Win32_Process | Select-Object CommandLine,ProcessId,ParentProcessId,CreationClassName | ConvertTo-Json | Out-File -FilePath "${file}" -Encoding utf8`
+    await execPromiseWithEnv(command, {
+      shell: 'powershell.exe'
+    })
+    const content = await readFile(file, 'utf-8')
+    const list = JSON5.parse(content)
+    all.push(
+      ...list.map((m: any) => {
+        return {
+          PID: `${m.ProcessId}`,
+          PPID: `${m.ParentProcessId}`,
+          COMMAND: m.CommandLine
+        }
+      })
+    )
+    remove(file).catch()
   } catch (e) {
-    console.log('ProcessPidList err0: ', e)
+    appDebugLog(`[ProcessPidList][error]`, `${e}`).catch()
   }
   return all
 }
 
-export const ProcessPidListByPids = async (pids: (string | number)[]): Promise<string[]> => {
-  const all: Set<string> = new Set()
-  const arr = await ProcessPidList()
+export const ProcessPidListByPids = async (
+  pids: (string | number)[],
+  processList?: PItem[]
+): Promise<string[]> => {
+  const all: Set<string> = new Set(pids as any)
+  const arr = processList ?? (await ProcessPidList())
   const find = (ppid: string | number) => {
     ppid = Number(ppid)
     for (const item of arr) {
@@ -61,10 +94,13 @@ export const ProcessPidListByPids = async (pids: (string | number)[]): Promise<s
   return [...all]
 }
 
-export const ProcessPidListByPid = async (pid: string | number): Promise<string[]> => {
+export const ProcessPidListByPid = async (
+  pid: string | number,
+  processList?: PItem[]
+): Promise<string[]> => {
   pid = `${pid}`
-  const all: Set<string> = new Set()
-  const arr = await ProcessPidList()
+  const all: Set<string> = new Set([pid])
+  const arr = processList ?? (await ProcessPidList())
   const find = (ppid: string | number) => {
     ppid = `${ppid}`
     for (const item of arr) {
@@ -89,14 +125,18 @@ export const ProcessPidListByPid = async (pid: string | number): Promise<string[
   return [...all]
 }
 
-export const ProcessListSearch = async (search: string, aA = true): Promise<PItem[]> => {
+export const ProcessListSearch = async (
+  search: string,
+  aA = true,
+  processList?: PItem[]
+): Promise<PItem[]> => {
   const all: PItem[] = []
   if (!search) {
     return all
   }
   let arr: PItem[] = []
   try {
-    arr = await ProcessPidList()
+    arr = processList ?? (await ProcessPidList())
   } catch (e) {
     console.log('ProcessListSearch error: ', e)
     return []
@@ -136,4 +176,40 @@ export const ProcessListSearch = async (search: string, aA = true): Promise<PIte
     }
   }
   return all
+}
+
+export const fetchProcessPidByPort = async (port: string): Promise<string[]> => {
+  const command = `netstat -ano`
+  let content: string = ''
+  try {
+    const res = await execPromiseWithEnv(command, {
+      shell: 'powershell.exe'
+    })
+    content = res.stdout.trim()
+  } catch (e) {
+    console.error('fetchProcessPidByPort error: ', e)
+    return []
+  }
+
+  const list: string[] = content.split('\n').filter((line) => line.trim().length > 0)
+  const pids: Set<string> = new Set()
+  for (const item of list) {
+    const line = item.trim().replace(/\s+/g, ' ')
+    const arr: string[] = line.split(' ')
+    if (arr.length === 5) {
+      const address = arr[1]
+      const state = arr[3]
+      const pid = arr[4]
+      if (address.endsWith(`:${port}`) && state === 'LISTENING') {
+        pids.add(pid)
+      }
+    } else if (arr.length === 4) {
+      const address = arr[1]
+      const pid = arr[3]
+      if (address.endsWith(`:${port}`)) {
+        pids.add(pid)
+      }
+    }
+  }
+  return Array.from(pids)
 }

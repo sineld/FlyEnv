@@ -16,7 +16,6 @@ interface Options {
   name: string
   icns?: string
   env?: Record<string, string>
-  dir?: string
   debug?: boolean
 }
 
@@ -199,7 +198,7 @@ async function windowsWaitForStatus(instance: Instance): Promise<void> {
   }
 
   let times = 0
-  while (times < 60) {
+  while (times < 120) {
     const a = checkFile(instance.pathStatus!)
     const b = checkFile(instance.pathStdout!)
     const c = checkFile(instance.pathStderr!)
@@ -299,7 +298,7 @@ async function linux(instance: Instance): Promise<{ stdout: string; stderr: stri
 }
 
 async function mac(instance: Instance): Promise<{ stdout: string; stderr: string }> {
-  const temp = instance?.options?.dir ?? tmpdir()
+  const temp = tmpdir()
   if (!temp) throw new Error('os.tmpdir() not defined.')
 
   const user = process.env.USER

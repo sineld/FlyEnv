@@ -31,6 +31,9 @@
   "projectGo": "Proyek Go",
   "projectPython": "Proyek Python",
   "projectTomcat": "Proyek Tomcat",
+  "projectDeno": "Deno Projects",
+  "projectBun": "Bun Projects",
+  "projectPerl": "Perl Projects",
   "jarPackagePath": "Path Paket JAR",
   "jdkPath": "Path JDK",
   "pythonPath": "Path Python",
@@ -65,8 +68,21 @@
   "showFile": "Tampilkan File",
   "sticky": "Tegak (Sticky)",
   "dbclickRowToEdit": "Klik dua kali baris ini untuk mengedit",
-
-  "projectDeno": "Deno Projects",
-  "projectBun": "Bun Projects",
-  "projectPerl": "Perl Projects"
+  "OnlineDomain": "Domain Online",
+  "LocalDoman": "Domain Lokal",
+  "CloudflareTunnel": {
+    "OnlineDomainExistsTips": "Nama domain online yang sama sudah ada.",
+    "CloudflaredNoFoundTips": "Cloudflared tidak ditemukan. Silakan instal terlebih dahulu.",
+    "TunnelInitFailTips": "Pembuatan tunnel gagal: {error}. Silakan periksa apakah ApiToken benar dan pastikan Anda memiliki izin edit Cloudflare Tunnel.",
+    "TunnelRule": "Aturan Tunnel",
+    "licenseTips": "Tanpa memperoleh lisensi, Anda hanya dapat membuat satu tunnel dan satu set catatan host."
+  },
+  "projectRuby": "Ruby Projects",
+  "projectRust": "Rust Projects",
+  "projectZig": "Zig Projects",
+  "ifIsService": "Apakah ini layanan",
+  "runSetting": "Pengaturan Jalankan",
+  "exec": "Jalankan",
+  "runInTerminal": "Jalankan di Terminal",
+  "portSetting": "Pengaturan Port"
 }

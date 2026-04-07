@@ -44,8 +44,9 @@ class Helper {
   enable = false
   appHelper?: AppHelper
 
-  send(module: Module, fn: FN, ...args: any) {
+  send<T>(module: Module, fn: FN, ...args: any): Promise<T> {
     return new Promise(async (resolve, reject) => {
+      console.trace('Helper.send: ', module, fn, ...args)
       if (!this.enable) {
         try {
           await AppHelperCheck()
@@ -53,7 +54,7 @@ class Helper {
         } catch (e) {
           this.enable = false
           if (this.appHelper) {
-            this.appHelper.initHelper().catch()
+            this.appHelper.needInstall()
           } else {
             process?.send?.({
               on: true,
